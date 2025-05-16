@@ -47,6 +47,7 @@ import org.lflang.AttributeUtils;
 import org.lflang.FileConfig;
 import org.lflang.MainConflictChecker;
 import org.lflang.MessageReporter;
+import org.lflang.analyses.maude.MaudeGenerator;
 import org.lflang.analyses.uclid.UclidGenerator;
 import org.lflang.ast.ASTUtils;
 import org.lflang.ast.AstTransformation;
@@ -658,6 +659,10 @@ public abstract class GeneratorBase extends AbstractLFValidator {
           .warning(
               "Verification using \"@property\" and \"--verify\" is an experimental feature. Use"
                   + " with caution.");
+
+      // Generate maude files.
+      MaudeGenerator maudeGenerator = new MaudeGenerator(lfContext);
+      maudeGenerator.doGenerate(resource, lfContext);
 
       // Generate uclid files.
       UclidGenerator uclidGenerator = new UclidGenerator(lfContext, properties);
