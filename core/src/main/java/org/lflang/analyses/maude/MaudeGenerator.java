@@ -16,6 +16,7 @@ import org.lflang.generator.GeneratorBase;
 import org.lflang.generator.LFGeneratorContext;
 import org.lflang.generator.NamedInstance;
 import org.lflang.generator.PortInstance;
+import org.lflang.generator.ReactionInstance;
 import org.lflang.generator.ReactionInstance.Runtime;
 import org.lflang.generator.ReactorInstance;
 import org.lflang.generator.StateVariableInstance;
@@ -25,11 +26,11 @@ import org.lflang.generator.TriggerInstance;
 import org.lflang.generator.docker.DockerGenerator;
 import org.lflang.lf.Reactor;
 import org.lflang.target.Target;
-import org.lflang.analyses.c.CToMaudeVisitor;
 
 /** (EXPERIMENTAL) Generator for Maude models. */
 public class MaudeGenerator extends GeneratorBase {
 
+    public List<MaudeReactorInstance> maudeReactorInstances;
     /**
      * Create a new GeneratorBase object.
      *
@@ -95,6 +96,10 @@ public class MaudeGenerator extends GeneratorBase {
 
         // Extract information from the named instances.
         populateDataStructures();
+
+        for (var r : reactorInstances)
+            this.maudeReactorInstances.add(new MaudeReactorInstance(r));
+
 
         // Create the src-gen directory
         setupDirectories();
@@ -189,9 +194,18 @@ public class MaudeGenerator extends GeneratorBase {
                 code.insert(code.length()-1, ";");
                 builder = new StringBuilder();
                 builder.append("( "+ri.getName().replaceAll("_","")+"."+statevar.getName().replaceAll("_", "")+" |->");
-                builder.append("["+statevar.getInit().getExpr().toString()+"])");
+                if (statevar.getInit() != null)
+                    builder.append("["+statevar.getInit().getExpr().toString()+"])");
+                else
+                    builder.append("[0]");
 
                 code.pr(builder.toString());
+                code.pr(statevar.getType().getId());
+                //code.pr(statevar.getInit())
+                    //code.pr(InferredType.fromAST(statevar.getType()).toText());
+//                    code.pr("BOOOOOOOOOOOL");
+//                else
+//                    code.pr(statevar.getType().toString());
             }
             code.unindent();
         }
