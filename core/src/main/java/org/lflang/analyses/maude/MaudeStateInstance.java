@@ -1,11 +1,15 @@
 package org.lflang.analyses.maude;
 
+import org.lflang.ast.ASTUtils;
 import org.lflang.generator.StateVariableInstance;
+import org.lflang.lf.Expression;
+import org.lflang.lf.Literal;
 
 public class MaudeStateInstance {
     private final StateVariableInstance lfStateVar;
-    private final String name;
+    private String name;
     private final MaudeTypes.MaudeVarType type;
+    public Object value;
 
     MaudeReactorInstance parent;
 
@@ -14,10 +18,24 @@ public class MaudeStateInstance {
         this.parent = parent;
         this.name = parent.getName() + ".sv." + lfStateVar.getName().replaceAll("_","");
 
-        if (lfStateVar.getDefinition().getType().getId() == "bool")
+        if (lfStateVar.getDefinition().getType().getId().equals("bool")) {
             this.type = MaudeTypes.MaudeVarType.BVarId;
-        else if (lfStateVar.getDefinition().getType().getId() == "int")
+            if (ASTUtils.isInitialized(lfStateVar.getDefinition())) {
+                final Expression expr = lfStateVar.getDefinition().getInit().getExpr();
+                this.value = Boolean.valueOf(((Literal) expr).getLiteral());
+            }
+            else
+                this.value = Boolean.valueOf(true); // set a default value for this type, as actions are not initialized with a value
+        }
+        else if (lfStateVar.getDefinition().getType().getId().equals("int")) {
             this.type = MaudeTypes.MaudeVarType.RVarId;
+            if (ASTUtils.isInitialized(lfStateVar.getDefinition())) {
+                final Expression expr = lfStateVar.getDefinition().getInit().getExpr();
+                this.value = Integer.decode(((Literal) expr).getLiteral());
+            }
+            else
+                this.value = Integer.valueOf(0); // set a default payload for this type, as actions are not initialized with a value
+        }
         else
             throw new RuntimeException("Maude only supports bool and int types for variables.");
 

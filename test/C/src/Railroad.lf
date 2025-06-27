@@ -3,11 +3,12 @@ target C
 reactor Train {
     input signal:int // 0 = GREEN, 1 = RED
     output out:int   // 0 = ARRIVE, 1 = LEAVE
-    state _out:int = 0
+    state _out:bool = false
     state _mode:int = 0  // 0 = AWAY, 1 = WAIT, 2 = BRIDGE
     
     // It would be better to use a physical action
     // to model sporadic events.
+    physical action a
     timer t(1 nsec, 1 sec)
     logical action outUpdated
     logical action toModeAway
@@ -69,7 +70,7 @@ reactor Controller {
     state east:int  // 0 = GREEN, 1 = RED 
     state near_w:int
     state near_e:int
-    logical action westUpdated
+    logical action westUpdated : bool
     logical action eastUpdated
 
     reaction(startup) {=
@@ -119,7 +120,7 @@ main reactor Railroad {
     train_w = new Train()
     train_e = new Train()
     controller = new Controller()
-    train_w.out -> controller.out_w
+    train_w.out -> controller.out_w after 5nsec
     train_e.out -> controller.out_e
     controller.signal_w -> train_w.signal
     controller.signal_e -> train_e.signal

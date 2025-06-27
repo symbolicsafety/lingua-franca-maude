@@ -9,6 +9,8 @@ import java.util.List;
 
 import org.eclipse.emf.ecore.resource.Resource;
 
+import org.lflang.TimeUnit;
+import org.lflang.TimeValue;
 import org.lflang.ast.ASTUtils;
 import org.lflang.generator.ActionInstance;
 import org.lflang.generator.CodeBuilder;
@@ -16,21 +18,33 @@ import org.lflang.generator.GeneratorBase;
 import org.lflang.generator.LFGeneratorContext;
 import org.lflang.generator.NamedInstance;
 import org.lflang.generator.PortInstance;
-import org.lflang.generator.ReactionInstance;
 import org.lflang.generator.ReactionInstance.Runtime;
 import org.lflang.generator.ReactorInstance;
+import org.lflang.generator.RuntimeRange;
+import org.lflang.generator.SendRange;
 import org.lflang.generator.StateVariableInstance;
 import org.lflang.generator.TargetTypes;
 import org.lflang.generator.TimerInstance;
 import org.lflang.generator.TriggerInstance;
 import org.lflang.generator.docker.DockerGenerator;
-import org.lflang.lf.Reactor;
+import org.lflang.lf.Connection;
+import org.lflang.lf.Expression;
+import org.lflang.lf.Time;
 import org.lflang.target.Target;
 
 /** (EXPERIMENTAL) Generator for Maude models. */
 public class MaudeGenerator extends GeneratorBase {
 
-    public List<MaudeReactorInstance> maudeReactorInstances;
+    public List<MaudeReactorInstance> maudeReactorInstances = new ArrayList<>();
+    private List<MaudePortInstance> maudePortInstances = new ArrayList<>();
+    private List<MaudeReactionInstance> maudeReactionInstances = new ArrayList<>();
+    private List<MaudeActionInstance> maudeActionInstances = new ArrayList<>();
+    private List<MaudeActionInstance> maudePhysicalActionInstances = new ArrayList<>();
+    private List<MaudeTimerInstance> maudeTimerInstances = new ArrayList<>();
+    private List<MaudeStateInstance> maudeStateInstances = new ArrayList<>();
+    public List<MaudeTriggerInstance> maudeTriggerInstances = new ArrayList<>(); // Triggers = ports + actions + timers
+
+
     /**
      * Create a new GeneratorBase object.
      *
@@ -97,10 +111,6 @@ public class MaudeGenerator extends GeneratorBase {
         // Extract information from the named instances.
         populateDataStructures();
 
-        for (var r : reactorInstances)
-            this.maudeReactorInstances.add(new MaudeReactorInstance(r));
-
-
         // Create the src-gen directory
         setupDirectories();
         generateMaudeFile();
@@ -135,100 +145,294 @@ public class MaudeGenerator extends GeneratorBase {
 
         code.pr("omod " + this.main.getName().toUpperCase() + " is");
         code.indent();
-        code.pr("including LF-REPR .\n");
-        code.pr("protecting LF-VALUE-TIME .\n");
+        code.pr("including LF-REPR .");
+        code.pr("protecting LF-VALUE-TIME .");
         code.pr("");
 
         generateIdentifiers();
         generateInitConfiguration();
 
+        code.unindent();
+        code.pr("endom");
+
+        code.pr("");
+
+        generateMaudeTest();
+
+    }
+
+    protected void generateMaudeTest() {
+        code.pr("omod TEST-"+this.main.getName().toUpperCase() +" is");
+        code.indent();
+        code.pr("including " + this .main.getName().toUpperCase() + " .");
+        code.pr("including DYNAMICS-WITHOUT-TICK .");
+        code.pr("");
+        code.pr("ops env queue rxns : -> Oid [ctor] .");
+        code.pr("");
+        code.pr("op initSystem : -> GlobalSystem .");
+        code.pr("eq initSystem =");
+        code.indent();
+        code.pr("{ < env : Environment |");
+        code.indent();
+        StringBuilder builder = new StringBuilder();
+        builder.append("physicalActions : ");
+        if (this.maudePhysicalActionInstances.isEmpty()) {
+            builder.append("none");
+            code.pr(builder.toString());
+        } else {
+            code.pr(builder.toString());
+            code.indent();
+            for (var physicalAction : this.maudePhysicalActionInstances) {
+                builder = new StringBuilder();
+                builder.append("< (" + physicalAction.getParent().getName() + " . " + physicalAction.getName() + " : PhysAct | ");
+                builder.append("leftOfPeriod : 0, period : 0, possibleValues : [0] : [1], timeNonDet : [true] >");
+                code.pr(builder.toString());
+            }
+            code.unindent();
+        }
+        code.pr(" > ");
+        code.pr("addReactionIndices(init)");
+        code.pr("< queue : EventQueue | queue : ");
+        builder = new StringBuilder();
+        boolean havestartup = false;
+        for (var reactor : this.maudeReactorInstances)
+          if (reactor.hasStartup()) {
+            havestartup = true;
+            break;
+          }
+
+        if (this.maudeTimerInstances.size() > 0) {
+          builder.append("addInitialTimers(init, "); 
+          if (havestartup) {
+            builder.append("addStartup(startup, init, empty))");
+          } else {
+            builder.append("empty) >");
+          }
+        }
+        else if (havestartup) {
+          builder.append("addStartup(startup, init, empty");
+        }
+        else
+          builder.append("empty");
+
+        builder.append(" >");
+        code.pr(builder.toString());
+
+        
+        code.pr("< rxns : Invoked | reactions : none >} .");
+        code.unindent();
+        code.unindent();
+        code.unindent();
         code.pr("endom");
     }
 
     protected void generateInitConfiguration() {
         code.pr("eq init = ");
 
-        for (var reactor : this.reactorInstances) {
-            if (reactor.isMainOrFederated())
+        for (var reactor : this.maudeReactorInstances) {
+            if (reactor.lfReactor.isMainOrFederated())
                 continue;
 
             code.indent();
-            code.pr("< "+reactor.getName().replaceAll("_", "")+" : Reactor |");
+            code.pr("< "+reactor.getName()+" : Reactor |");
             // generate reactor attributes
             code.indent();
-            generateInports(reactor.reactorDefinition, reactor);
+            generateInports(reactor);
             code.insert(code.length()-1, ",");
-            generateOutports(reactor.reactorDefinition, reactor);
+            generateOutports(reactor);
             code.insert(code.length()-1, ",");
-            generateStates(reactor.reactorDefinition, reactor);
-//      generateTimers(reactor.reactorDefinition, reactor);
-//      generateActions(reactor.reactorDefinition, reactor);
-//      generateReactions(reactor.reactorDefinition, reactor);
+            generateStates(reactor);
+            code.insert(code.length()-1, ",");
+            generateTimers(reactor);
+            code.insert(code.length()-1, ",");
+            generateActions(reactor);
+            code.insert(code.length()-1, ",");
+            generateReactions(reactor);
             code.unindent();
             code.pr(">");
             code.unindent();
         }
+
+        generateConnections();
+
     }
 
-    protected void generateStates(Reactor reactor, ReactorInstance ri) {
+    protected void generateConnections() {
+        //generate connections
+        for (var port : this.maudePortInstances) {
+            for (SendRange range : port.getLfPort().getDependentPorts()) {
+                MaudePortInstance mSource = port.parent.getMaudePort(range.instance);
+                Connection connection = range.connection;
+                List<RuntimeRange<PortInstance>> destinations = range.destinations;
+
+                // Extract delay value
+                long delay = 0;
+                if (connection.getDelay() != null) {
+                    // Somehow delay is an Expression,
+                    // which makes it hard to convert to nanoseconds.
+                    Expression delayExpr = connection.getDelay();
+                    if (delayExpr instanceof Time) {
+                        long interval = ((Time) delayExpr).getInterval();
+                        String unit = ((Time) delayExpr).getUnit();
+                        TimeValue timeValue = new TimeValue(interval, TimeUnit.fromName(unit));
+                        delay = timeValue.toNanoSeconds();
+                    }
+                }
+
+                for (var portRange : destinations) {
+                    var destination = portRange.instance;
+                    MaudePortInstance mDestination = null;
+                    for (var reactor : this.maudeReactorInstances) {
+                        if (reactor.getMaudePort(destination) != null) {
+                            mDestination = reactor.getMaudePort(destination);
+                            break;
+                        }
+                    }
+                    if (mDestination == null)
+                        throw new RuntimeException("Could not find Maude port corresponding to"
+                            + " destination port " + destination.getName());
+                    StringBuilder builder = new StringBuilder();
+                    builder.append("(" + mSource.getParent().getName() + " : " + mSource.getName());
+                    if (delay > 0) {
+                        builder.append(" -- " + delay);
+                    }
+                    builder.append(" --> " + mDestination.getParent().getName() + " : " + mDestination.getName() + ")");
+                    code.pr(builder);
+
+                }
+            }
+        }
+    }
+
+    protected void generateReactions(MaudeReactorInstance mReactor) {
+        StringBuilder builder = new StringBuilder();
+        builder.append("reactions : ");
+        if (mReactor.reactions.isEmpty()) {
+            throw new RuntimeException("No reactions found for reactor " + mReactor.getName());
+        }
+        else {
+            code.pr(builder.toString());
+            code.indent();
+
+            for (var reaction : mReactor.reactions) {
+
+                builder = new StringBuilder();
+                builder.append("(reaction when (" + reaction.getTriggers().get(0).getName());
+
+                for (var trigger : reaction.getTriggers().stream().skip(1).toList())
+                    builder.append(" ; " + trigger.getName() );
+
+                builder.append(")");
+
+                if (reaction.getEffects().size() > 0) {
+                    builder.append(" --> (" + reaction.getEffects().get(0).getName());
+                    for (var effect : reaction.getEffects().stream().skip(1).toList())
+                        builder.append(" ; " + effect.getName());
+                    builder.append(")");
+                }
+
+                builder.append(") do {");
+                code.pr(builder.toString());
+                code.indent();
+                //code body
+                code.unindent();
+                code.pr("}");
+
+
+            }
+            code.unindent();
+        }
+    }
+
+    protected void generateActions(MaudeReactorInstance mReactor) {
+        StringBuilder builder = new StringBuilder();
+        builder.append("actions : ");
+        if (mReactor.physicalActions.isEmpty() && mReactor.logicalActions.isEmpty()) {
+            builder.append("none");
+            code.pr(builder.toString());
+        }
+        else{
+            code.pr(builder.toString());
+            code.indent();
+            for (var logicalAction : mReactor.logicalActions) {
+                builder = new StringBuilder();
+                builder.append("< " + logicalAction.getName() + " : LogicalAction | minDelay : " +
+                    logicalAction.minDelay + ", minSpacing : " + logicalAction.minSpacing +
+                        ", policy: " + logicalAction.policy + ", payload : [" + logicalAction.payload +  "] >");
+                code.pr(builder.toString());
+            }
+            for (var physicalAction : mReactor.physicalActions) {
+                builder = new StringBuilder();
+                builder.append("< " + physicalAction.getName() + " : PhysicalAction | minDelay : " +
+                    physicalAction.minDelay + ", minSpacing : " + physicalAction.minSpacing +
+                    ", policy: " + physicalAction.policy + ", payload : [" + physicalAction.payload +  "] >");
+                code.pr(builder.toString());
+            }
+            code.unindent();
+        }
+    }
+
+    protected void generateTimers(MaudeReactorInstance mReactor) {
+        StringBuilder builder = new StringBuilder();
+        builder.append("timers : ");
+        if (mReactor.timers.isEmpty()) {
+            builder.append("none");
+            code.pr(builder.toString());
+        }
+        else{
+            code.pr(builder.toString());
+            code.indent();
+            for (var timer : mReactor.timers) {
+                builder = new StringBuilder();
+                builder.append("< " + timer.getName() + " : Timer | offset : " + timer.getOffset() +
+                    ", period : " + timer.getPeriod() + " >");
+                code.pr(builder.toString());
+            }
+            code.unindent();
+        }
+    }
+
+    protected void generateStates(MaudeReactorInstance mReactor) {
         StringBuilder builder = new StringBuilder();
         builder.append("state : ");
-        if (reactor.getStateVars().isEmpty()) {
-            builder.append("empty,");
+        if (mReactor.stateVars.isEmpty()) {
+            builder.append("empty");
             code.pr(builder.toString());
         } else {
             code.pr(builder.toString());
             code.indent();
-            //first element separately
 
-//            builder = new StringBuilder();
-//            var sv = reactor.getStateVars().get(0);
-//            //builder.append("( "+ri.getName().replaceAll("_","")+"."+sv.getName().replaceAll("_", "")+" |-> ");
-//            builder.append("["+sv.getInit().getExpr()+"])");
-//
-//
-//            builder.append(" )");
-//            code.pr(builder.toString());
-//            for (var statevar : reactor.getStateVars().stream().skip(1).toList()) {
-            for (var statevar : reactor.getStateVars()) {
+            builder = new StringBuilder();
+            //first element separately
+            var sv = mReactor.stateVars.get(0);
+            builder.append("( " +sv.getName() +" |-> [" + sv.value + "] )");
+            code.pr(builder.toString());
+
+            for (var statevar : mReactor.stateVars. stream().skip(1).toList()) {
                 code.insert(code.length()-1, ";");
                 builder = new StringBuilder();
-                builder.append("( "+ri.getName().replaceAll("_","")+"."+statevar.getName().replaceAll("_", "")+" |->");
-                if (statevar.getInit() != null)
-                    builder.append("["+statevar.getInit().getExpr().toString()+"])");
-                else
-                    builder.append("[0]");
+                builder.append("( " + statevar.getName() + " |-> [" + statevar.value +"] )");
 
                 code.pr(builder.toString());
-                code.pr(statevar.getType().getId());
-                //code.pr(statevar.getInit())
-                    //code.pr(InferredType.fromAST(statevar.getType()).toText());
-//                    code.pr("BOOOOOOOOOOOL");
-//                else
-//                    code.pr(statevar.getType().toString());
+
             }
             code.unindent();
         }
     }
 
-    protected void generateInports(Reactor reactor, ReactorInstance ri) {
+    protected void generateInports(MaudeReactorInstance mReactor) {
         StringBuilder builder = new StringBuilder();
         builder.append("inports : ");
-        if (reactor.getInputs().isEmpty()) {
-            builder.append("none,");
+        if (mReactor.inPorts.isEmpty()) {
+            builder.append("none");
             code.pr(builder.toString());
         }
         else{
             code.pr(builder.toString());
             code.indent();
-            for (var inport : reactor.getInputs()) {
+            for (var inport : mReactor.inPorts) {
                 builder = new StringBuilder();
-                builder.append("< "+ri.getName().replaceAll("_","")+"."+inport.getName().replaceAll("_", "")+" : Port | value : ");
-                if (inport.getType().getId().equals("bool"))
-                    builder.append("[false]");
-                else builder.append("[0]");
-
-                builder.append(" >");
+                builder.append("< " + inport.getName() + " : Port | value : " + inport.value + " >");
                 code.pr(builder.toString());
             }
             code.unindent();
@@ -236,24 +440,20 @@ public class MaudeGenerator extends GeneratorBase {
 
     }
 
-    protected void generateOutports(Reactor reactor, ReactorInstance ri) {
+    protected void generateOutports(MaudeReactorInstance mReactor) {
         StringBuilder builder = new StringBuilder();
         builder.append("outports : ");
-        if (reactor.getOutputs().isEmpty()) {
-            builder.append("none,");
+        if (mReactor.outPorts.isEmpty()) {
+            builder.append("none");
             code.pr(builder.toString());
         }
         else{
             code.pr(builder.toString());
             code.indent();
-            for (var outport : reactor.getOutputs()) {
+            for (var outport : mReactor.outPorts) {
                 builder = new StringBuilder();
-                builder.append("< "+ri.getName().replaceAll("_","")+"."+outport.getName().replaceAll("_", "")+" : Port | value : ");
-                if (outport.getType().getId().equals("bool"))
-                    builder.append("[false]");
-                else builder.append("[0]");
+                builder.append("< " + outport.getName() + " : Port | value : "  + outport.value + " >");
 
-                builder.append(" >");
                 code.pr(builder.toString());
             }
             code.unindent();
@@ -263,7 +463,7 @@ public class MaudeGenerator extends GeneratorBase {
 
 
     protected void generateIdentifiers() {
-        generateReactorIdentifiers();
+        //generateReactorIdentifiers();
         generateStateVariables();
         generatePortVariables();
         generateTimerVariables();
@@ -273,65 +473,27 @@ public class MaudeGenerator extends GeneratorBase {
 
     }
 
-    protected void generateReactorIdentifiers() {
-        StringBuilder builder = new StringBuilder();
-        builder.append("ops");
-        for (var reactor : this.reactorInstances) {
-            if (reactor.isMainOrFederated())
-                continue;
-
-            builder.append(" ");
-            builder.append(reactor.getName().replaceAll("_", ""));
-        }
-        builder.append(" : -> ReactorId [ctor] .");
-        code.pr(builder.toString());
-    }
-
     protected void generateStateVariables() {
-        for (var stateVariable : this.stateVariables) {
-
-            StringBuilder builder = new StringBuilder();
-            builder.append("op");
-            builder.append(" "+stateVariable.getParent().getName().replaceAll("_", "")+"."+stateVariable.getName().replaceAll("_", ""));
-            if (stateVariable.getDefinition().getType().getId().equals("bool"))
-                builder.append(" : -> BVarId [ctor] .");
-            else
-                builder.append(" : -> RVarId [ctor] .");
-            code.pr(builder.toString());
+        for (var stateVariable : this.maudeStateInstances) {
+            code.pr("op "+stateVariable.getName() + " : -> " + stateVariable.getType() + " [ctor] .");
         }
     }
 
     protected void generatePortVariables() {
-        for (var portVariable : this.portInstances) {
-            StringBuilder builder = new StringBuilder();
-            builder.append("op");
-            builder.append(" "+portVariable.getParent().getName().replaceAll("_", "")+"."+portVariable.getName().replaceAll("_", ""));
-            if (portVariable.getDefinition().getType().getId().equals("bool"))
-                builder.append(" : -> BPortId [ctor] .");
-            else
-                builder.append(" : -> RPortId [ctor] .");
-            code.pr(builder.toString());
+        for (var portVariable : this.maudePortInstances) {
+            code.pr("op "+portVariable.getName() + " : -> " + portVariable.getType() + " [ctor] .");
         }
     }
 
     protected void generateTimerVariables() {
-        for (var timerVariable : this.timerInstances) {
-            StringBuilder builder = new StringBuilder();
-            builder.append("op");
-            builder.append(" "+timerVariable.getParent().getName().replaceAll("_", "")+"."+timerVariable.getName().replaceAll("_", ""));
-            builder.append(" : -> TimerId [ctor] .");
-            code.pr(builder.toString());
+        for (var timerVariable : this.maudeTimerInstances) {
+            code.pr("op "+timerVariable.getName()+ " : -> TimerId [ctor] .");
         }
     }
 
     protected void generateActionVariables() {
-        for (var actionVariable : this.actionInstances) {
-            StringBuilder builder = new StringBuilder();
-            builder.append("op");
-            builder.append(" "+actionVariable.getParent().getName().replaceAll("_", "")+"."+actionVariable.getName().replaceAll("_", ""));
-            //FIXME: add something to distinguish between boolean and integer actions
-            builder.append(" : -> ActionId [ctor] .");
-            code.pr(builder.toString());
+        for (var actionVariable : this.maudeActionInstances) {
+            code.pr("op "+actionVariable.getName() + " : -> " + actionVariable.getType() +" [ctor] .");
         }
     }
 
@@ -369,28 +531,38 @@ public class MaudeGenerator extends GeneratorBase {
     private void populateLists(ReactorInstance reactor) {
         // Reactor and reaction instances
         this.reactorInstances.add(reactor);
+
+        MaudeReactorInstance maudeReactor = new MaudeReactorInstance(reactor);
+        this.maudeReactorInstances.add(maudeReactor);
+
+
         for (var reaction : reactor.reactions) {
             this.reactionInstances.addAll(reaction.getRuntimeInstances());
         }
+        // TODO: confirm that getRuntimeInstances() returns the same reaction instance if there
+        //  are no banks/nested reactors/reactions
+        this.maudeReactionInstances.addAll(maudeReactor.reactions);
 
-        // State variables, actions, ports, timers.
-        for (var state : reactor.states) {
-            this.stateVariables.add(state);
-        }
-        for (var action : reactor.actions) {
-            this.actionInstances.add(action);
-        }
-        for (var port : reactor.inputs) {
-            this.inputInstances.add(port);
-            this.portInstances.add(port);
-        }
-        for (var port : reactor.outputs) {
-            this.outputInstances.add(port);
-            this.portInstances.add(port);
-        }
-        for (var timer : reactor.timers) {
-            this.timerInstances.add(timer);
-        }
+        this.stateVariables.addAll(reactor.states);
+        this.maudeStateInstances.addAll(maudeReactor.stateVars);
+
+        this.actionInstances.addAll(reactor.actions);
+        this.maudeActionInstances.addAll(maudeReactor.logicalActions);
+        this.maudeActionInstances.addAll(maudeReactor.physicalActions);
+        this.maudePhysicalActionInstances.addAll(maudeReactor.physicalActions);
+
+        this.inputInstances.addAll(reactor.inputs);
+        this.portInstances.addAll(reactor.inputs);
+        this.maudePortInstances.addAll(maudeReactor.inPorts);
+
+        this.outputInstances.addAll(reactor.outputs);
+        this.portInstances.addAll(reactor.outputs);
+        this.maudePortInstances.addAll(maudeReactor.outPorts);
+
+        this.timerInstances.addAll(reactor.timers);
+        this.maudeTimerInstances.addAll(maudeReactor.timers);
+
+        this.maudeTriggerInstances.addAll(maudeReactor.triggers);
 
         // Recursion
         for (var child : reactor.children) {

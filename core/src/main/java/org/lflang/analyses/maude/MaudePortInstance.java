@@ -3,14 +3,14 @@ package org.lflang.analyses.maude;
 import org.lflang.generator.PortInstance;
 
 public class MaudePortInstance {
-    private PortInstance lfPort;
-    protected String name;
+    private final PortInstance lfPort;
+    private  String name;
     public MaudeTypes.MaudePortType type;
+    public Object value;
 
     MaudeReactorInstance parent;
 
     public MaudePortInstance(PortInstance lfPort, MaudeReactorInstance parent) {
-        this.lfPort = lfPort;
         this.lfPort = lfPort;
         this.parent = parent;
 
@@ -18,11 +18,17 @@ public class MaudePortInstance {
             this.name = parent.getName() + ".in." + lfPort.getName().replaceAll("_","");
         else if (this.lfPort.isOutput())
             this.name = parent.getName() + ".out." + lfPort.getName().replaceAll("_","");
+        else
+            throw new RuntimeException("Lf port " + lfPort.getName() + " is neither input nor output");
 
-        if (lfPort.getDefinition().getType().getId() == "bool")
+        if (lfPort.getDefinition().getType().getId().equals("bool")) {
             this.type = MaudeTypes.MaudePortType.BPortId;
-        else if (lfPort.getDefinition().getType().getId() == "int")
+            this.value = Boolean.valueOf(true); // set a default value for this type, as ports are not initialized with a value
+        }
+        else if (lfPort.getDefinition().getType().getId().equals("int")) {
             this.type = MaudeTypes.MaudePortType.RPortId;
+            this.value = Integer.valueOf(0); // set a default payload for this type, as actions are not initialized with a value
+        }
         else
             throw new RuntimeException("Maude only supports bool and int types for port payload types.");
 
@@ -38,6 +44,10 @@ public class MaudePortInstance {
 
     public String getType() {
         return type.name();
+    }
+
+    public PortInstance getLfPort() {
+        return lfPort;
     }
 
     @Override

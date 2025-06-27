@@ -4,8 +4,8 @@ import org.lflang.generator.TimerInstance;
 
 public class MaudeTimerInstance {
 
-    private TimerInstance lfTimer;
-    protected String name;
+    private final TimerInstance lfTimer;
+    private String name;
     private final long offset;
     private final long period;
 
@@ -17,11 +17,17 @@ public class MaudeTimerInstance {
 
         this.name = parent.getName() + ".t." + lfTimer.getName().replaceAll("_", "");
 
-        this.offset = lfTimer.getOffset().toNanoSeconds() / 1_000_000_000;
-        this.period = lfTimer.getPeriod().toNanoSeconds() / 1_000_000_000;
+        // TODO: Add explicit time units to Maude
+        // Our Maude implementation does not use time units.
+        // Using nanoseconds (the most granular LF time unit) everywhere is correct and trivial,
+        // but will make reading Maude's output contain large numbers whenever seconds/milliseconds are used
+        this.offset = lfTimer.getOffset().toNanoSeconds();
+        this.period = lfTimer.getPeriod().toNanoSeconds();
 
-        if (this.offset < 0 || this.period < 0)
-            throw new RuntimeException("Offset and Period must be non-negative");
+
+
+        if (this.offset < 0 || this.period <= 0)
+            throw new RuntimeException("Offset and Period must be non-negative. Period cannot be 0.");
     }
 
     public MaudeReactorInstance getParent() {
@@ -38,6 +44,10 @@ public class MaudeTimerInstance {
 
     public long getPeriod() {
         return period;
+    }
+
+    public TimerInstance getLfTimer() {
+        return lfTimer;
     }
 
     @Override
