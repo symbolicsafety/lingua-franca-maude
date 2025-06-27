@@ -18,7 +18,11 @@ public class MaudeStateInstance {
         this.parent = parent;
         this.name = parent.getName() + ".sv." + lfStateVar.getName().replaceAll("_","");
 
-        if (lfStateVar.getDefinition().getType().getId().equals("bool")) {
+        if (lfStateVar.getDefinition().getType().getId() == null) {
+            this.type = MaudeTypes.MaudeVarType.RVarId;
+            this.value = Integer.valueOf(0);
+        }
+        else if (lfStateVar.getDefinition().getType().getId().equals("bool")) {
             this.type = MaudeTypes.MaudeVarType.BVarId;
             if (ASTUtils.isInitialized(lfStateVar.getDefinition())) {
                 final Expression expr = lfStateVar.getDefinition().getInit().getExpr();
