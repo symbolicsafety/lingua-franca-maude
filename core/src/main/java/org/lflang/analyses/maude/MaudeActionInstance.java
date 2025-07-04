@@ -37,7 +37,7 @@ public class MaudeActionInstance {
                 this.payload = Boolean.valueOf(true); // set a default payload for this type, as actions are not initialized with a value
             } else if (lfAction.getDefinition().getType().getId().equals("int")) {
                 this.type = MaudeTypes.MaudeActionType.RActionId;
-                this.payload = Integer.valueOf(0); // set a default value.
+                this.payload = Long.valueOf(0); // set a default value.
             }
             else
                 throw new RuntimeException("Maude only supports bool and int types for action payload types.");

@@ -23,7 +23,7 @@ public class MaudePortInstance {
 
         if (lfPort.getDefinition().getType().getId() == null) {
             this.type = MaudeTypes.MaudePortType.RPortId;
-            this.value = Integer.valueOf(0); // set a default payload for this type
+            this.value = Long.valueOf(0); // set a default payload for this type
         }
         else if (lfPort.getDefinition().getType().getId().equals("bool")) {
             this.type = MaudeTypes.MaudePortType.BPortId;
@@ -31,7 +31,7 @@ public class MaudePortInstance {
         }
         else if (lfPort.getDefinition().getType().getId().equals("int")) {
             this.type = MaudeTypes.MaudePortType.RPortId;
-            this.value = Integer.valueOf(0); // set a default payload for this type, as ports are not initialized with a value
+            this.value = Long.valueOf(0); // set a default payload for this type, as ports are not initialized with a value
         }
         else
             throw new RuntimeException("Maude only supports bool and int types for port payload types.");

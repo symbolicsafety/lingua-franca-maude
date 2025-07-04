@@ -20,7 +20,7 @@ public class MaudeStateInstance {
 
         if (lfStateVar.getDefinition().getType().getId() == null) {
             this.type = MaudeTypes.MaudeVarType.RVarId;
-            this.value = Integer.valueOf(0);
+            this.value = Long.valueOf(0);
         }
         else if (lfStateVar.getDefinition().getType().getId().equals("bool")) {
             this.type = MaudeTypes.MaudeVarType.BVarId;
@@ -35,10 +35,10 @@ public class MaudeStateInstance {
             this.type = MaudeTypes.MaudeVarType.RVarId;
             if (ASTUtils.isInitialized(lfStateVar.getDefinition())) {
                 final Expression expr = lfStateVar.getDefinition().getInit().getExpr();
-                this.value = Integer.decode(((Literal) expr).getLiteral());
+                this.value = Long.decode(((Literal) expr).getLiteral());
             }
             else
-                this.value = Integer.valueOf(0); // set a default payload for this type, as actions are not initialized with a value
+                this.value = Long.valueOf(0); // set a default payload for this type, as actions are not initialized with a value
         }
         else
             throw new RuntimeException("Maude only supports bool and int types for variables.");
