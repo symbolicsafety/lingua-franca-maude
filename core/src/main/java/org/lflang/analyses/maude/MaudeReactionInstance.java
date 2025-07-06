@@ -55,4 +55,8 @@ public class MaudeReactionInstance {
     public ReactionInstance getLfReaction() {
         return lfReaction;
     }
+
+    public MaudeReactorInstance getParent() {
+        return parent;
+    }
 }

@@ -7,11 +7,19 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.antlr.v4.runtime.CharStreams;
+import org.antlr.v4.runtime.CommonTokenStream;
 import org.eclipse.emf.ecore.resource.Resource;
 
 import org.lflang.TimeUnit;
 import org.lflang.TimeValue;
+import org.lflang.analyses.c.BuildAstParseTreeVisitor;
+import org.lflang.analyses.c.CAst;
+import org.lflang.analyses.c.CToMaudeVisitor;
+import org.lflang.analyses.c.IfNormalFormAstVisitor;
+import org.lflang.analyses.c.VariablePrecedenceVisitor;
 import org.lflang.ast.ASTUtils;
+import org.lflang.dsl.CParser.BlockItemListContext;
 import org.lflang.generator.ActionInstance;
 import org.lflang.generator.CodeBuilder;
 import org.lflang.generator.GeneratorBase;
@@ -334,7 +342,31 @@ public class MaudeGenerator extends GeneratorBase {
                 builder.append(") do {");
                 code.pr(builder.toString());
                 code.indent();
-                //code body
+                String body = reaction.getLfReaction().getDefinition().getCode().getBody();
+
+                // Generate a parse tree.
+                org.lflang.dsl.CLexer lexer = new org.lflang.dsl.CLexer(CharStreams.fromString(body));
+                CommonTokenStream tokens = new CommonTokenStream(lexer);
+                org.lflang.dsl.CParser parser = new org.lflang.dsl.CParser(tokens);
+                BlockItemListContext parseTree = parser.blockItemList();
+
+                // Build an AST.
+                BuildAstParseTreeVisitor buildAstVisitor = new BuildAstParseTreeVisitor(messageReporter);
+                CAst.AstNode ast = buildAstVisitor.visitBlockItemList(parseTree);
+
+                // VariablePrecedenceVisitor
+               // VariablePrecedenceVisitor precVisitor = new VariablePrecedenceVisitor();
+               // precVisitor.visit(ast);
+
+                // Convert the AST to If Normal Form (INF).
+               // IfNormalFormAstVisitor infVisitor = new IfNormalFormAstVisitor();
+               // infVisitor.visit(ast, new ArrayList<CAst.AstNode>());
+                //CAst.StatementSequenceNode inf = infVisitor.INF;
+
+                CToMaudeVisitor c2mVisitor = new CToMaudeVisitor(this, reaction);
+
+                String output = c2mVisitor.visit(ast);
+                code.pr(output);
                 code.unindent();
                 code.pr("}");
 
