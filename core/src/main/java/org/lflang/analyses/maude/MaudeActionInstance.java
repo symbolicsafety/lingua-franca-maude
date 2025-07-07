@@ -54,7 +54,7 @@ public class MaudeActionInstance {
     private MaudeActionInstance(MaudeReactorInstance parent) {
         this.lfAction = null;
         this.parent = parent;
-        this.name = parent.getName() + ".startup";
+        this.name = "startup";
         this.minDelay = 0;
         this.minSpacing = 0;
         this.policy = "defer";

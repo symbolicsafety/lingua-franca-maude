@@ -147,9 +147,9 @@ public class MaudeGenerator extends GeneratorBase {
         code.pr(
             String.join(
                 "\n",
-                "/*******************************",
+                "---(****************************",
                 " * Auto-generated Maude model *",
-                " ******************************/"));
+                " ******************************)---"));
 
         code.pr("omod " + this.main.getName().toUpperCase() + " is");
         code.indent();
@@ -192,8 +192,8 @@ public class MaudeGenerator extends GeneratorBase {
             code.indent();
             for (var physicalAction : this.maudePhysicalActionInstances) {
                 builder = new StringBuilder();
-                builder.append("< (" + physicalAction.getParent().getName() + " . " + physicalAction.getName() + " : PhysAct | ");
-                builder.append("leftOfPeriod : 0, period : 0, possibleValues : [0] : [1], timeNonDet : [true] >");
+                builder.append("< (" + physicalAction.getParent().getName() + " . " + physicalAction.getName() + " ): PhysAct | ");
+                builder.append("leftOfPeriod : 0, period : 0, possibleValues : [0] : [1], timeNonDet : true >");
                 code.pr(builder.toString());
             }
             code.unindent();
@@ -262,7 +262,7 @@ public class MaudeGenerator extends GeneratorBase {
         }
 
         generateConnections();
-
+        code.pr(".");
     }
 
     protected void generateConnections() {
@@ -339,7 +339,7 @@ public class MaudeGenerator extends GeneratorBase {
                     builder.append(")");
                 }
 
-                builder.append(") do {");
+                builder.append(" do {");
                 code.pr(builder.toString());
                 code.indent();
                 String body = reaction.getLfReaction().getDefinition().getCode().getBody();
@@ -368,7 +368,7 @@ public class MaudeGenerator extends GeneratorBase {
                 String output = c2mVisitor.visit(ast);
                 code.pr(output);
                 code.unindent();
-                code.pr("}");
+                code.pr("})");
 
 
             }
@@ -464,7 +464,7 @@ public class MaudeGenerator extends GeneratorBase {
             code.indent();
             for (var inport : mReactor.inPorts) {
                 builder = new StringBuilder();
-                builder.append("< " + inport.getName() + " : Port | value : " + inport.value + " >");
+                builder.append("< " + inport.getName() + " : Port | value : [" + inport.value + "] >");
                 code.pr(builder.toString());
             }
             code.unindent();
@@ -484,7 +484,7 @@ public class MaudeGenerator extends GeneratorBase {
             code.indent();
             for (var outport : mReactor.outPorts) {
                 builder = new StringBuilder();
-                builder.append("< " + outport.getName() + " : Port | value : "  + outport.value + " >");
+                builder.append("< " + outport.getName() + " : Port | value : ["  + outport.value + "] >");
 
                 code.pr(builder.toString());
             }
@@ -495,7 +495,7 @@ public class MaudeGenerator extends GeneratorBase {
 
 
     protected void generateIdentifiers() {
-        //generateReactorIdentifiers();
+        generateReactorIdentifiers();
         generateStateVariables();
         generatePortVariables();
         generateTimerVariables();
@@ -503,6 +503,12 @@ public class MaudeGenerator extends GeneratorBase {
 
         code.pr("op init : -> Configuration .\n\n");
 
+    }
+
+    protected void generateReactorIdentifiers() {
+        for (var reactor : this.maudeReactorInstances) {
+            code.pr("op "+reactor.getName() + " : -> ReactorId [ctor] .");
+        }
     }
 
     protected void generateStateVariables() {
