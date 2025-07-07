@@ -77,21 +77,21 @@ public class CToMaudeVisitor extends CBaseAstVisitor<String> {
         String lhs = visit(node.left);
         String rhs = visit(node.right);
 
-        return lhs + " + " + rhs;
+        return "(" + lhs + " + " + rhs + ")";
     }
 
     @Override
     public String visitSubtractionNode(SubtractionNode node) {
         String lhs = visit(node.left);
         String rhs = visit(node.right);
-        return lhs + " - " + rhs;
+        return "(" + lhs + " - " + rhs + ")";
     }
 
     @Override
     public String visitAssignmentNode(AssignmentNode node) {
         String lhs = visit(node.left);
         String rhs = visit(node.right);
-        return lhs + " := " + rhs;
+        return "(" + lhs + " := " + rhs + ")";
     }
 
     @Override
@@ -106,50 +106,64 @@ public class CToMaudeVisitor extends CBaseAstVisitor<String> {
     public String visitEqualNode(EqualNode node) {
         String lhs = visit(node.left);
         String rhs = visit(node.right);
-        return lhs + " === " + rhs;
+        return "(" + lhs + " === " + rhs + ")";
     }
 
     @Override
     public String visitNotEqualNode(NotEqualNode node) {
         String lhs = visit(node.left);
         String rhs = visit(node.right);
-        return lhs + " ==/= " + rhs;
+        return "(" +  lhs + " ==/= " + rhs + ")";
     }
 
     @Override
     public String visitGreaterEqualNode(GreaterEqualNode node) {
         String lhs = visit(node.left);
         String rhs = visit(node.right);
-        return lhs + " >= " + rhs;
+        return "(" +  lhs + " >= " + rhs + ")";
     }
 
     @Override
     public String visitGreaterThanNode(GreaterThanNode node) {
         String lhs = visit(node.left);
         String rhs = visit(node.right);
-        return lhs + " > " + rhs;
+        return "(" + lhs + " > " + rhs + ")";
     }
 
     @Override
     public String visitLessEqualNode(LessEqualNode node) {
         String lhs = visit(node.left);
         String rhs = visit(node.right);
-        return lhs + " <= " + rhs;
+        return "(" + lhs + " <= " + rhs + ")";
     }
 
     @Override
     public String visitLessThanNode(LessThanNode node) {
         String lhs = visit(node.left);
         String rhs = visit(node.right);
-        return lhs + " < " + rhs;
+        return "(" + lhs + " < " + rhs +")";
     }
 
     @Override
     public String visitIfBlockNode(IfBlockNode node) {
         String antecedent = visit(node.left);
         String consequent = visit(((IfBodyNode)node.right).left);
-        return "if (" + antecedent + ") then " + consequent + " fi";
+        String alternative = "";
+        if (((IfBodyNode)node.right).right != null)
+            alternative = visit(((IfBodyNode)node.right).right);
+        if (alternative != ""){
+            return "if (" + antecedent + ") then (" + consequent + ") else (" + alternative +  ") fi";
+        }
+        return "if (" + antecedent + ") then (" + consequent + ") fi";
     }
+
+    // Does not get called
+//    @Override
+//    public String visitIfBodyNode(IfBodyNode node) {
+//        String then = visit(node.left);
+//        String else_ = visit(((IfBodyNode)node.right).left);
+//        return "then ( " + then + " ) else ( " + else_ + " )";
+//    }
 
     @Override
     public String visitLiteralNode(LiteralNode node) {
@@ -160,7 +174,7 @@ public class CToMaudeVisitor extends CBaseAstVisitor<String> {
     public String visitLogicalAndNode(LogicalAndNode node) {
         String lhs = visit(node.left);
         String rhs = visit(node.right);
-        return "(" + lhs + " && " + rhs + ")";
+        return "(" + lhs + ") && (" + rhs + ")";
     }
 
     @Override
@@ -172,7 +186,7 @@ public class CToMaudeVisitor extends CBaseAstVisitor<String> {
 
     @Override
     public String visitLogicalNotNode(LogicalNotNode node) {
-        return "!" + "(" + visit(node.child) + ")";
+        return "( ! " + visit(node.child) + ") ";
     }
 
     @Override
@@ -196,12 +210,7 @@ public class CToMaudeVisitor extends CBaseAstVisitor<String> {
         String additionalDelay = visit(node.children.get(1));
         Long delay = Long.parseLong(additionalDelay.replaceAll("\\[|\\]",""));
         Long totalDelay = mAction.minDelay + delay;
-        String payload = new String();
-        if (mAction.getType() == MaudeTypes.MaudeActionType.BActionId.toString())
-            payload = "[true]";
-        else
-            payload = "[0]";
-
+        String payload = "[" + mAction.payload.toString() + "]";
         return "schedule(" + mAction.getName() + ", " + totalDelay + ", " + payload + ")";
     }
 
@@ -218,6 +227,9 @@ public class CToMaudeVisitor extends CBaseAstVisitor<String> {
 
         return "schedule(" + mAction.getName() + ", " + totalDelay + ", " + payload + ")";
     }
+
+    //TODO: Add visitScheduleActionTokenNode to handle booleans.
+    //TODO: will require addition to org.lflang.analyses.c also
 
     @Override
     public String visitSetPortNode(SetPortNode node) {
@@ -239,32 +251,33 @@ public class CToMaudeVisitor extends CBaseAstVisitor<String> {
         NamedInstance instance = getInstanceByName(node.name);
         MaudeTriggerInstance mTrigger = parent.getMaudeTrigger((TriggerInstance) instance);
 
-        return " isPresent " + mTrigger.getName();
+        return "(isPresent(" + mTrigger.getName() +"))";
     }
 
     @Override
     public String visitTriggerValueNode(TriggerValueNode node) {
         NamedInstance instance = getInstanceByName(node.name);
         MaudeTriggerInstance mTrigger = parent.getMaudeTrigger((TriggerInstance) instance);
-        String payload = new String();
-        if (mTrigger.getMaudeTrigger() instanceof  MaudeActionInstance) {
-            MaudeActionInstance mAction = (MaudeActionInstance) mTrigger.getMaudeTrigger();
-            if (mAction.getType() == MaudeTypes.MaudeActionType.BActionId.toString())
-                payload = "[" + ((Boolean) mAction.payload).toString() + "]";
-            else
-                payload = "[" + ((Long)mAction.payload).toString() + "]";
-        }
-        else if (mTrigger.getMaudeTrigger() instanceof  MaudePortInstance) {
-            MaudePortInstance mPort = (MaudePortInstance) mTrigger.getMaudeTrigger();
-            if (mPort.getType() == MaudeTypes.MaudePortType.BPortId.toString())
-                payload = "[" + ((Boolean) mPort.value).toString() + "]";
-            else
-                payload = "[" + ((Long)mPort.value).toString() + "]";
-        }
-        else
-            throw new RuntimeException("MaudeTriggers can only be bools or ints.");
-
-        return payload;
+        return mTrigger.getName();
+//        String payload = new String();
+//        if (mTrigger.getMaudeTrigger() instanceof  MaudeActionInstance) {
+//            MaudeActionInstance mAction = (MaudeActionInstance) mTrigger.getMaudeTrigger();
+//            if (mAction.getType() == MaudeTypes.MaudeActionType.BActionId.toString())
+//                payload = "[" + ((Boolean) mAction.payload).toString() + "]";
+//            else
+//                payload = "[" + ((Long)mAction.payload).toString() + "]";
+//        }
+//        else if (mTrigger.getMaudeTrigger() instanceof  MaudePortInstance) {
+//            MaudePortInstance mPort = (MaudePortInstance) mTrigger.getMaudeTrigger();
+//            if (mPort.getType() == MaudeTypes.MaudePortType.BPortId.toString())
+//                payload = "[" + ((Boolean) mPort.value).toString() + "]";
+//            else
+//                payload = "[" + ((Long)mPort.value).toString() + "]";
+//        }
+//        else
+//            throw new RuntimeException("MaudeTriggers can only be bools or ints.");
+//
+//        return payload;
     }
 
     @Override
@@ -279,6 +292,7 @@ public class CToMaudeVisitor extends CBaseAstVisitor<String> {
         String result = new String();
         for (int i = 0; i < node.children.size(); i++) {
             result += visit(node.children.get(i));
+            result += ";\n";
         }
         return result;
     }
