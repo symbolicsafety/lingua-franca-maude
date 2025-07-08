@@ -272,7 +272,10 @@ public class CToMaudeVisitor extends CBaseAstVisitor<String> {
     public String visitStatementSequenceNode(StatementSequenceNode node) {
         String result = new String();
         for (int i = 0; i < node.children.size(); i++) {
-            result += visit(node.children.get(i));
+            String temp = visit(node.children.get(i));
+            if (temp == null)
+                temp = "skip";
+            result += temp;
             if (i != node.children.size() - 1) {
 //                if (node.children.get(i) instanceof IfBlockNode)
 //                result += "\n";

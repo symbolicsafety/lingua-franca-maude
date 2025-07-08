@@ -214,11 +214,11 @@ public class MaudeGenerator extends GeneratorBase {
           if (havestartup) {
             builder.append("addStartup(startup, init, empty))");
           } else {
-            builder.append("empty) >");
+            builder.append("empty)");
           }
         }
         else if (havestartup) {
-          builder.append("addStartup(startup, init, empty");
+          builder.append("addStartup(startup, init, empty)");
         }
         else
           builder.append("empty");
