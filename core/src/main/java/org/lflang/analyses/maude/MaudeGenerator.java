@@ -390,14 +390,14 @@ public class MaudeGenerator extends GeneratorBase {
                 builder = new StringBuilder();
                 builder.append("< " + logicalAction.getName() + " : LogicalAction | minDelay : " +
                     logicalAction.minDelay + ", minSpacing : " + logicalAction.minSpacing +
-                        ", policy: " + logicalAction.policy + ", payload : [" + logicalAction.payload +  "] >");
+                        ", policy : " + logicalAction.policy + ", payload : [" + logicalAction.payload +  "] >");
                 code.pr(builder.toString());
             }
             for (var physicalAction : mReactor.physicalActions) {
                 builder = new StringBuilder();
                 builder.append("< " + physicalAction.getName() + " : PhysicalAction | minDelay : " +
                     physicalAction.minDelay + ", minSpacing : " + physicalAction.minSpacing +
-                    ", policy: " + physicalAction.policy + ", payload : [" + physicalAction.payload +  "] >");
+                    ", policy : " + physicalAction.policy + ", payload : [" + physicalAction.payload +  "] >");
                 code.pr(builder.toString());
             }
             code.unindent();

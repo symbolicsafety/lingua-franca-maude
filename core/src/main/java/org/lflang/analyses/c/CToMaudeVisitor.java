@@ -211,7 +211,7 @@ public class CToMaudeVisitor extends CBaseAstVisitor<String> {
         Long delay = Long.parseLong(additionalDelay.replaceAll("\\[|\\]",""));
         Long totalDelay = mAction.minDelay + delay;
         String payload = "[" + mAction.payload.toString() + "]";
-        return "schedule(" + mAction.getName() + ", " + totalDelay + ", " + payload + ")";
+        return "schedule(" + mAction.getName() + ", [" + totalDelay + "], " + payload + ")";
     }
 
     @Override
@@ -259,25 +259,6 @@ public class CToMaudeVisitor extends CBaseAstVisitor<String> {
         NamedInstance instance = getInstanceByName(node.name);
         MaudeTriggerInstance mTrigger = parent.getMaudeTrigger((TriggerInstance) instance);
         return mTrigger.getName();
-//        String payload = new String();
-//        if (mTrigger.getMaudeTrigger() instanceof  MaudeActionInstance) {
-//            MaudeActionInstance mAction = (MaudeActionInstance) mTrigger.getMaudeTrigger();
-//            if (mAction.getType() == MaudeTypes.MaudeActionType.BActionId.toString())
-//                payload = "[" + ((Boolean) mAction.payload).toString() + "]";
-//            else
-//                payload = "[" + ((Long)mAction.payload).toString() + "]";
-//        }
-//        else if (mTrigger.getMaudeTrigger() instanceof  MaudePortInstance) {
-//            MaudePortInstance mPort = (MaudePortInstance) mTrigger.getMaudeTrigger();
-//            if (mPort.getType() == MaudeTypes.MaudePortType.BPortId.toString())
-//                payload = "[" + ((Boolean) mPort.value).toString() + "]";
-//            else
-//                payload = "[" + ((Long)mPort.value).toString() + "]";
-//        }
-//        else
-//            throw new RuntimeException("MaudeTriggers can only be bools or ints.");
-//
-//        return payload;
     }
 
     @Override
@@ -293,9 +274,10 @@ public class CToMaudeVisitor extends CBaseAstVisitor<String> {
         for (int i = 0; i < node.children.size(); i++) {
             result += visit(node.children.get(i));
             if (i != node.children.size() - 1) {
-                if (node.children.get(i) instanceof IfBlockNode)
-                result += "\n";
-                else result += ";\n";
+//                if (node.children.get(i) instanceof IfBlockNode)
+//                result += "\n";
+//                else
+                    result += " ;\n";
                 }
         }
         return result;
