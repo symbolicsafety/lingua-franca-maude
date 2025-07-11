@@ -209,9 +209,8 @@ public class CToMaudeVisitor extends CBaseAstVisitor<String> {
         MaudeActionInstance mAction = reaction.getParent().getMaudeAction(lfAction);
         String additionalDelay = visit(node.children.get(1));
         Long delay = Long.parseLong(additionalDelay.replaceAll("\\[|\\]",""));
-        Long totalDelay = mAction.minDelay + delay;
         String payload = "[" + mAction.payload.toString() + "]";
-        return "schedule(" + mAction.getName() + ", [" + totalDelay + "], " + payload + ")";
+        return "schedule(" + mAction.getName() + ", [" + delay + "], " + payload + ")";
     }
 
     @Override
@@ -221,11 +220,10 @@ public class CToMaudeVisitor extends CBaseAstVisitor<String> {
         ActionInstance lfAction = (ActionInstance) instance;
         MaudeActionInstance mAction = parent.getMaudeAction(lfAction);
         String additionalDelay = visit(node.children.get(1));
-        Long delay = Long.parseLong(additionalDelay);
-        Long totalDelay = mAction.minDelay + delay;
+        Long delay = Long.parseLong(additionalDelay.replaceAll("\\[|\\]",""));
         String payload = visit(node.children.get(2));
 
-        return "schedule(" + mAction.getName() + ", " + totalDelay + ", " + payload + ")";
+        return "schedule(" + mAction.getName() + ", " + delay + ", " + payload + ")";
     }
 
     //TODO: Add visitScheduleActionTokenNode to handle booleans.
@@ -273,13 +271,11 @@ public class CToMaudeVisitor extends CBaseAstVisitor<String> {
         String result = new String();
         for (int i = 0; i < node.children.size(); i++) {
             String temp = visit(node.children.get(i));
+            // treat opaque node as skip instruction.
             if (temp == null)
                 temp = "skip";
             result += temp;
             if (i != node.children.size() - 1) {
-//                if (node.children.get(i) instanceof IfBlockNode)
-//                result += "\n";
-//                else
                     result += " ;\n";
                 }
         }
