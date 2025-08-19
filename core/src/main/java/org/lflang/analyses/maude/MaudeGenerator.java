@@ -35,10 +35,12 @@ import org.lflang.generator.TargetTypes;
 import org.lflang.generator.TimerInstance;
 import org.lflang.generator.TriggerInstance;
 import org.lflang.generator.docker.DockerGenerator;
+import org.lflang.lf.Attribute;
 import org.lflang.lf.Connection;
 import org.lflang.lf.Expression;
 import org.lflang.lf.Time;
 import org.lflang.target.Target;
+import org.lflang.util.StringUtil;
 
 /** (EXPERIMENTAL) Generator for Maude models. */
 public class MaudeGenerator extends GeneratorBase {
@@ -52,14 +54,16 @@ public class MaudeGenerator extends GeneratorBase {
     private List<MaudeStateInstance> maudeStateInstances = new ArrayList<>();
     public List<MaudeTriggerInstance> maudeTriggerInstances = new ArrayList<>(); // Triggers = ports + actions + timers
 
+    private List<Attribute> mProperties;
 
     /**
      * Create a new GeneratorBase object.
      *
      * @param context
      */
-    public MaudeGenerator(LFGeneratorContext context) {
+    public MaudeGenerator(LFGeneratorContext context, List<Attribute> mproperties) {
         super(context);
+        this.mProperties = mproperties;
     }
     //// Public fields
     /** A list of reaction runtime instances. */
@@ -119,9 +123,21 @@ public class MaudeGenerator extends GeneratorBase {
         // Extract information from the named instances.
         populateDataStructures();
 
+        for (Attribute prop : this.mProperties) {
+            String physAct = StringUtil.removeQuotes(
+                prop.getAttrParms().stream()
+                    .filter(attr -> attr.getName().equals("physact"))
+                    .findFirst()
+                    .get()
+                    .getValue());
+            System.out.println(physAct);
+        }
+
         // Create the src-gen directory
         setupDirectories();
         generateMaudeFile();
+
+
     }
 
     ////////////////////////////////////////////////////////////

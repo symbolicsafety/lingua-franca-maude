@@ -651,6 +651,16 @@ public abstract class GeneratorBase extends AbstractLFValidator {
         AttributeUtils.getAttributes(main).stream()
             .filter(attr -> attr.getAttrName().equals("property"))
             .collect(Collectors.toList());
+    List<Attribute> maudeprop = AttributeUtils.getAttributes(main).stream()
+        .filter(attr -> attr.getAttrName().equals("maude"))
+        .collect(Collectors.toList());
+
+    if (maudeprop.size() > 0) {
+        // Generate maude files.
+        MaudeGenerator maudeGenerator = new MaudeGenerator(lfContext, maudeprop);
+        maudeGenerator.doGenerate(resource, lfContext);
+    }
+
     if (properties.size() > 0) {
 
       // Provide a warning.
@@ -660,9 +670,7 @@ public abstract class GeneratorBase extends AbstractLFValidator {
               "Verification using \"@property\" and \"--verify\" is an experimental feature. Use"
                   + " with caution.");
 
-      // Generate maude files.
-      MaudeGenerator maudeGenerator = new MaudeGenerator(lfContext);
-      maudeGenerator.doGenerate(resource, lfContext);
+
 
       // Generate uclid files.
       UclidGenerator uclidGenerator = new UclidGenerator(lfContext, properties);

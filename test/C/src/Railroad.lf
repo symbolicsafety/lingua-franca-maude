@@ -17,6 +17,7 @@ reactor Train {
     
     reaction(startup) {=
         self->_mode = 0;
+        printf("FINDME\n");
     =}
     reaction(t) -> out, outUpdated {=
         if (self->_mode == 0) {
@@ -115,7 +116,7 @@ reactor Controller {
     =}
 }
 
-@property(name="TrainSafety", tactic="bmc", spec="G[0, 5 sec](!(Railroad_train_w__mode == 2 && Railroad_train_e__mode == 2))", CT=20, expect=true)
+@maude(physact="OURCOOLphysact", tactic="bmc", spec="G[0, 5 sec](!(Railroad_train_w__mode == 2 && Railroad_train_e__mode == 2))", CT=20, expect=true)
 main reactor Railroad {
     train_w = new Train()
     train_e = new Train()
