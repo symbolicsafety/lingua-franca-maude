@@ -6,6 +6,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
@@ -16,8 +17,6 @@ import org.lflang.TimeValue;
 import org.lflang.analyses.c.BuildAstParseTreeVisitor;
 import org.lflang.analyses.c.CAst;
 import org.lflang.analyses.c.CToMaudeVisitor;
-import org.lflang.analyses.c.IfNormalFormAstVisitor;
-import org.lflang.analyses.c.VariablePrecedenceVisitor;
 import org.lflang.ast.ASTUtils;
 import org.lflang.dsl.CParser.BlockItemListContext;
 import org.lflang.generator.ActionInstance;
@@ -35,6 +34,7 @@ import org.lflang.generator.TargetTypes;
 import org.lflang.generator.TimerInstance;
 import org.lflang.generator.TriggerInstance;
 import org.lflang.generator.docker.DockerGenerator;
+import org.lflang.lf.AttrParm;
 import org.lflang.lf.Attribute;
 import org.lflang.lf.Connection;
 import org.lflang.lf.Expression;
@@ -54,16 +54,18 @@ public class MaudeGenerator extends GeneratorBase {
     private List<MaudeStateInstance> maudeStateInstances = new ArrayList<>();
     public List<MaudeTriggerInstance> maudeTriggerInstances = new ArrayList<>(); // Triggers = ports + actions + timers
 
-    private List<Attribute> mProperties;
+    private List<Attribute> maudePhysActProperties;
+    private List<Attribute> maudeProperties;
 
     /**
      * Create a new GeneratorBase object.
      *
      * @param context
      */
-    public MaudeGenerator(LFGeneratorContext context, List<Attribute> mproperties) {
+    public MaudeGenerator(LFGeneratorContext context, List<Attribute> maudeProperties, List<Attribute> maudePhysActProperties) {
         super(context);
-        this.mProperties = mproperties;
+        this.maudeProperties = maudeProperties;
+        this.maudePhysActProperties = maudePhysActProperties;
     }
     //// Public fields
     /** A list of reaction runtime instances. */
@@ -123,15 +125,15 @@ public class MaudeGenerator extends GeneratorBase {
         // Extract information from the named instances.
         populateDataStructures();
 
-        for (Attribute prop : this.mProperties) {
-            String physAct = StringUtil.removeQuotes(
-                prop.getAttrParms().stream()
-                    .filter(attr -> attr.getName().equals("physact"))
-                    .findFirst()
-                    .get()
-                    .getValue());
-            System.out.println(physAct);
-        }
+//        for (Attribute prop : this.maudeProperties) {
+//            String physAct = StringUtil.removeQuotes(
+//                prop.getAttrParms().stream()
+//                    .filter(attr -> attr.getName().equals("physact"))
+//                    .findFirst()
+//                    .get()
+//                    .getValue());
+//            System.out.println(physAct);
+//        }
 
         // Create the src-gen directory
         setupDirectories();
@@ -206,12 +208,53 @@ public class MaudeGenerator extends GeneratorBase {
         } else {
             code.pr(builder.toString());
             code.indent();
-            for (var physicalAction : this.maudePhysicalActionInstances) {
-                builder = new StringBuilder();
-                builder.append("< (" + physicalAction.getParent().getName() + " . " + physicalAction.getName() + " ): PhysAct | ");
-                builder.append("leftOfPeriod : 0, period : 0, possibleValues : [0] : [1], timeNonDet : true >");
-                code.pr(builder.toString());
-            }
+           // for (var physicalAction : this.maudePhysicalActionInstances) {
+                 // This part should be generated from properties???
+                for (Attribute prop : this.maudePhysActProperties) {
+                    String name =
+                        StringUtil.removeQuotes(
+                            prop.getAttrParms().stream()
+                                .filter(attr -> attr.getName().equals("name"))
+                                .findFirst()
+                                .get()
+                                .getValue());
+                    String vals = // We should make proper Maude range out of this string
+                        StringUtil.removeQuotes(
+                            prop.getAttrParms().stream()
+                                .filter(attr -> attr.getName().equals("vals"))
+                                .findFirst()
+                                .get()
+                                .getValue());
+
+                    // What is unit for period? We need to transform it to nanoseconds
+                    int period = Integer.parseInt(
+                        StringUtil.removeQuotes(
+                            prop.getAttrParms().stream()
+                                .filter(attr -> attr.getName().equals("period"))
+                                .findFirst()
+                                .get()
+                                .getValue()));
+                    if (period<0) period = 0;
+                    
+                    Boolean timeNonDet = true;
+                    Optional<AttrParm> timeNonDetParam =
+                        prop.getAttrParms().stream().filter(attr -> attr.getName().equals("timeNonDet")).findFirst();
+                    if (timeNonDetParam.isPresent()) {
+                        timeNonDet = Boolean.parseBoolean(timeNonDetParam.get().getValue());
+                    }
+
+                    MaudeActionInstance physicalAction = this.maudePhysicalActionInstances.stream().
+                        filter(pa -> pa.getLfAction().getFullNameWithJoiner("_").equals(name)).findFirst().get();
+                    builder = new StringBuilder();
+                    builder.append("< (" + physicalAction.getParent().getName() + " . " + physicalAction.getName() + " ): PhysAct | ");
+                    builder.append("leftOfPeriod : "+period+", period : "+period+", possibleValues : "+vals //+"[0] : [1], "
+                        + ", timeNonDet : "+timeNonDet+" >");
+                    code.pr(builder.toString());
+                }
+
+
+
+          //  }
             code.unindent();
         }
         code.pr(" > ");

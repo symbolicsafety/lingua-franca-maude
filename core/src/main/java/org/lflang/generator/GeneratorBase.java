@@ -651,13 +651,16 @@ public abstract class GeneratorBase extends AbstractLFValidator {
         AttributeUtils.getAttributes(main).stream()
             .filter(attr -> attr.getAttrName().equals("property"))
             .collect(Collectors.toList());
-    List<Attribute> maudeprop = AttributeUtils.getAttributes(main).stream()
-        .filter(attr -> attr.getAttrName().equals("maude"))
-        .collect(Collectors.toList());
+      List<Attribute> maudePAprop = AttributeUtils.getAttributes(main).stream()
+          .filter(attr -> attr.getAttrName().equals("maudePhysAct"))
+          .collect(Collectors.toList());
+      List<Attribute> maudeprop = AttributeUtils.getAttributes(main).stream()
+          .filter(attr -> attr.getAttrName().equals("maude"))
+          .collect(Collectors.toList());
 
     if (maudeprop.size() > 0) {
         // Generate maude files.
-        MaudeGenerator maudeGenerator = new MaudeGenerator(lfContext, maudeprop);
+        MaudeGenerator maudeGenerator = new MaudeGenerator(lfContext, maudeprop, maudePAprop);
         maudeGenerator.doGenerate(resource, lfContext);
     }
 

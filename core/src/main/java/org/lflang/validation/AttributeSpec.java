@@ -237,12 +237,20 @@ public class AttributeSpec {
                 new AttrParamSpec("CT", AttrParamType.INT, true),
                 new AttrParamSpec("expect", AttrParamType.BOOLEAN, true))));
       ATTRIBUTE_SPECS_BY_NAME.put(
+          "maudePhysAct",
+          new AttributeSpec(
+              List.of(
+                  new AttrParamSpec("name", AttrParamType.STRING, false),
+                  new AttrParamSpec("vals", AttrParamType.STRING, false),
+                  new AttrParamSpec("period", AttrParamType.INT, false),
+                  new AttrParamSpec("timeNonDet", AttrParamType.BOOLEAN, true))));
+      ATTRIBUTE_SPECS_BY_NAME.put(
           "maude",
           new AttributeSpec(
               List.of(
-                  new AttrParamSpec("physact", AttrParamType.STRING, false),
-                  new AttrParamSpec("tactic", AttrParamType.STRING, false),
-                  new AttrParamSpec("spec", AttrParamType.STRING, false),
+                  new AttrParamSpec("physact", AttrParamType.STRING, true),
+                  new AttrParamSpec("tactic", AttrParamType.STRING, true),
+                  new AttrParamSpec("spec", AttrParamType.STRING, true),
                   new AttrParamSpec("CT", AttrParamType.INT, true),
                   new AttrParamSpec("expect", AttrParamType.BOOLEAN, true))));
     ATTRIBUTE_SPECS_BY_NAME.put("_c_body", new AttributeSpec(null));

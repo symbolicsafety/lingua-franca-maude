@@ -116,7 +116,9 @@ reactor Controller {
     =}
 }
 
-@maude(physact="OURCOOLphysact", tactic="bmc", spec="G[0, 5 sec](!(Railroad_train_w__mode == 2 && Railroad_train_e__mode == 2))", CT=20, expect=true)
+@maudePhysAct(name="Railroad_train_w_a", vals="[0-10]", period=10, timeNonDet=false)
+@maudePhysAct(name="Railroad_train_e_a", vals="[0-10]", period=10)
+@maude(tactic="bmc", spec="G[0, 5 sec](!(Railroad_train_w__mode == 2 && Railroad_train_e__mode == 2))", CT=20)
 main reactor Railroad {
     train_w = new Train()
     train_e = new Train()
