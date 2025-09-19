@@ -662,6 +662,17 @@ public abstract class GeneratorBase extends AbstractLFValidator {
         // Generate maude files.
         MaudeGenerator maudeGenerator = new MaudeGenerator(lfContext, maudeprop, maudePAprop);
         maudeGenerator.doGenerate(resource, lfContext);
+
+        if (commandFactory.createCommand("maude", List.of()) == null) {
+            messageReporter
+                .nowhere()
+                .error(
+                    "Fail to check the generated verification models because Maude is not"
+                        + " installed.");
+        } else {
+            // Run the Uclid tool.
+            maudeGenerator.runner.run();
+        }
     }
 
     if (properties.size() > 0) {

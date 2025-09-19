@@ -45,6 +45,10 @@ import org.lflang.util.StringUtil;
 /** (EXPERIMENTAL) Generator for Maude models. */
 public class MaudeGenerator extends GeneratorBase {
 
+    /** A runner for the generated Maude files */
+    public MaudeRunner runner;
+
+
     public List<MaudeReactorInstance> maudeReactorInstances = new ArrayList<>();
     private List<MaudePortInstance> maudePortInstances = new ArrayList<>();
     private List<MaudeReactionInstance> maudeReactionInstances = new ArrayList<>();
@@ -66,6 +70,8 @@ public class MaudeGenerator extends GeneratorBase {
         super(context);
         this.maudeProperties = maudeProperties;
         this.maudePhysActProperties = maudePhysActProperties;
+
+        this.runner = new MaudeRunner(this);
     }
     //// Public fields
     /** A list of reaction runtime instances. */
@@ -185,6 +191,8 @@ public class MaudeGenerator extends GeneratorBase {
 
         generateMaudeTest();
 
+        code.pr("rew [10] initSystem .");
+        code.pr("quit");
     }
 
     protected void generateMaudeTest() {
@@ -606,7 +614,7 @@ public class MaudeGenerator extends GeneratorBase {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        System.out.println("The models will be located in: " + outputDir);
+        System.out.println("The Maude files will be located in: " + outputDir);
     }
 
     /** Populate the data structures. */
