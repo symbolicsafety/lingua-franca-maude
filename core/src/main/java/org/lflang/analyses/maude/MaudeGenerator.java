@@ -191,6 +191,7 @@ public class MaudeGenerator extends GeneratorBase {
 
         generateMaudeTest();
 
+        code.pr("");
         code.pr("rew [10] initSystem .");
         code.pr("");
 
