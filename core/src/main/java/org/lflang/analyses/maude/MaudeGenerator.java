@@ -192,6 +192,10 @@ public class MaudeGenerator extends GeneratorBase {
         generateMaudeTest();
 
         code.pr("rew [10] initSystem .");
+        code.pr("");
+
+        generateAnalysis();
+
         code.pr("quit");
     }
 
@@ -226,7 +230,7 @@ public class MaudeGenerator extends GeneratorBase {
                                 .findFirst()
                                 .get()
                                 .getValue());
-                    String vals = // We should make proper Maude range out of this string
+                    String vals =
                         StringUtil.removeQuotes(
                             prop.getAttrParms().stream()
                                 .filter(attr -> attr.getName().equals("vals"))
@@ -259,9 +263,6 @@ public class MaudeGenerator extends GeneratorBase {
                         + ", timeNonDet : "+timeNonDet+" >");
                     code.pr(builder.toString());
                 }
-
-
-
           //  }
             code.unindent();
         }
@@ -295,6 +296,7 @@ public class MaudeGenerator extends GeneratorBase {
 
         
         code.pr("< rxns : Invoked | reactions : none >} .");
+
         code.unindent();
         code.unindent();
         code.unindent();
@@ -599,6 +601,79 @@ public class MaudeGenerator extends GeneratorBase {
     protected void generateActionVariables() {
         for (var actionVariable : this.maudeActionInstances) {
             code.pr("op "+actionVariable.getName() + " : -> " + actionVariable.getType() +" [ctor] .");
+        }
+    }
+/*
+    protected void generateBoundedOMOD(String timeBound) {
+        code.pr("omod TIME-BOUNDED-"+this.main.getName().toUpperCase() +" is");
+        code.indent();
+        code.pr("including TEST-" + this .main.getName().toUpperCase() + " .");
+        code.pr("including TIME-BOUNDED-DYNAMICS-PARAMETRIC .");
+        code.pr("eq timeBound = "+timeBound+" .");
+        code.unindent();
+        code.pr("endom");
+    }
+
+    protected void generateUnboundedOMOD() {
+        code.pr("omod UNBOUNDED-"+this.main.getName().toUpperCase() +" is");
+        code.indent();
+        code.pr("including TEST-" + this .main.getName().toUpperCase() + " .");
+        code.pr("including UNBOUNDED-ANALYSIS-DYNAMICS .");
+        code.unindent();
+        code.pr("endom");
+    }
+*/
+    protected void generateAnalysis() {
+        // We modified Maude code such that single module is used for both bounded and unbounded analysis
+        code.pr("omod ANALYSIS-"+this.main.getName().toUpperCase() +" is");
+        code.indent();
+        code.pr("including TEST-" + this .main.getName().toUpperCase() + " .");
+        code.pr("including UNBOUNDED-AND-BOUNDED-ANALYSIS-DYNAMICS .");
+        code.unindent();
+        code.pr("endom");
+        code.pr("");
+
+        for (Attribute prop : this.maudeProperties) {
+            String analysis = // so far this has fixed value "reachability"
+                StringUtil.removeQuotes(
+                    prop.getAttrParms().stream()
+                        .filter(attr -> attr.getName().equals("analysis"))
+                        .findFirst()
+                        .get()
+                        .getValue());
+            String goal =
+                StringUtil.removeQuotes(
+                    prop.getAttrParms().stream()
+                        .filter(attr -> attr.getName().equals("goal"))
+                        .findFirst()
+                        .get()
+                        .getValue());
+
+            // What is unit for timeBound? We need to transform it to nanoseconds
+            int timeBound;
+            Optional<AttrParm> timeBoundParam =
+                prop.getAttrParms().stream().filter(attr -> attr.getName().equals("timeBound")).findFirst();
+            if (timeBoundParam.isPresent()) {
+                timeBound = Integer.parseInt(timeBoundParam.get().getValue());
+            } else timeBound=-1;
+
+            String mode = "*";
+            Optional<AttrParm> modeParam =
+                prop.getAttrParms().stream().filter(attr -> attr.getName().equals("mode")).findFirst();
+            if (modeParam.isPresent()) {
+                mode = modeParam.get().getValue();
+            }
+
+            StringBuilder builder = new StringBuilder();
+            builder.append("search [1] initSystem timeBound ");
+            // Decide what kind of analysis to do
+            if (timeBound > 0) {
+                builder.append(timeBound);
+            } else builder.append("INF");
+            builder.append(" =>"+mode+" {C:Configuration} timeBound TI:TimeInf");
+            builder.append(" such that "+goal);
+            code.pr(builder.toString());
+            code.pr("");
         }
     }
 

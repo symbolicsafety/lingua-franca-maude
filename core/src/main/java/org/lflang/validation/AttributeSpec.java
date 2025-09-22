@@ -248,11 +248,10 @@ public class AttributeSpec {
           "maude",
           new AttributeSpec(
               List.of(
-                  new AttrParamSpec("physact", AttrParamType.STRING, true),
-                  new AttrParamSpec("tactic", AttrParamType.STRING, true),
-                  new AttrParamSpec("spec", AttrParamType.STRING, true),
-                  new AttrParamSpec("CT", AttrParamType.INT, true),
-                  new AttrParamSpec("expect", AttrParamType.BOOLEAN, true))));
+                  new AttrParamSpec("analysis", AttrParamType.STRING, false),
+                  new AttrParamSpec("timeBound", AttrParamType.INT, true),
+                  new AttrParamSpec("goal", AttrParamType.STRING, false),
+                  new AttrParamSpec("mode", AttrParamType.STRING, true))));
     ATTRIBUTE_SPECS_BY_NAME.put("_c_body", new AttributeSpec(null));
     ATTRIBUTE_SPECS_BY_NAME.put(
         "_tpoLevel",
