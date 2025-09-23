@@ -21,19 +21,21 @@ RBRACKET
     ;
 
 LAND
-    : '&&'
+    : '/\\'
     ;
 
 LOR
-    : '||'
+    : '\\/'
     ;
 
 EQUI
     : '<==>'
+    | '<->'
     ;
 
 IMPL
     : '==>'
+    | '->'
     ;
 
 UNTIL
@@ -41,11 +43,13 @@ UNTIL
     ;
 
 NEGATION
-    : '!'
+    : '~'
+    | '!'
     ;
 
 NEXT
     : 'X'
+    | 'O'
     ;
 
 EVENTUALLY
@@ -62,10 +66,12 @@ WS
 
 TRUE
     : 'true'
+    | 'True'
     ;
 
 FALSE
     : 'false'
+    | 'False'
     ;
 
 PLUS
@@ -89,7 +95,7 @@ EQ
     ;
 
 NEQ
-    : '!='
+    : '=/='
     ;
 
 LT
