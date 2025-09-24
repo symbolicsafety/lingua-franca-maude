@@ -96,7 +96,7 @@ public class LTLVisitor extends LTLParserBaseVisitor<String> {
             return _visitUnaryOp(ctx.left);
         }
 
-        return "(" + _visitUnaryOp(ctx.left) + ") U (" + _visitUnaryOp(ctx.right) + ")";
+        return "(" + _visitUnaryOp(ctx.left) + ")" + ctx.op.getText() + "(" + _visitUnaryOp(ctx.right) + ")";
     }
 
     public String visitNoUnaryOp(LTLParser.NoUnaryOpContext ctx) {
@@ -141,13 +141,34 @@ public class LTLVisitor extends LTLParserBaseVisitor<String> {
             if (maudeName == null)
                 throw new RuntimeException("Could not find component " + ctx.lfname.getText() + " IN "+ctx.reactor.getText());
 
-            return "(" + maudeName + " in " + reactor.getName() + " " + ctx.op.getText() + " [" + ctx.val.getText() + "] )";
+            if (ctx.bop == null)
+                return "(" + maudeName + " in " + reactor.getName() + " " + ctx.op.getText() + " [" + ctx.val.getText() + "] )";
+            else
+                return "(" + maudeName + " in " + reactor.getName() + " " + ctx.bop.getText() + " [" + ctx.bval.getText() + "] )";
         }
         else if (ctx.reaction != null) {
             MaudeReactorInstance reactor = getMaudeReactorByLFname(ctx.reactor.getText());
             if (reactor == null)
                 throw new RuntimeException("Could not find reactor "+ctx.reactor.getText() + " used for expr "+ctx.reactor.getText() + "." + ctx.reaction.getText() + " invoked");
             return "((" + reactor.getName() + " . " + ctx.reaction.getText() + ") invoked )";
+        }
+        else if (ctx.event != null) {
+            if (ctx.reactor == null)
+                throw new RuntimeException("Reactor not defined for event "+ctx.reactor.getText());
+            MaudeReactorInstance reactor = getMaudeReactorByLFname(ctx.reactor.getText());
+            if (reactor == null)
+                throw new RuntimeException("Could not find reactor "+ctx.reactor.getText() + " used for expr "+ctx.event.getText() + "(" + ctx.reactor.getText() + ")");
+
+            String maudeName = getMaudeobjByLFname(reactor, ctx.trigger.getText());
+            if (maudeName == null)
+                throw new RuntimeException("Could not find component " + ctx.trigger.getText() + " for event in  "+ctx.reactor.getText());
+
+            String ret = "(event("+reactor+", "+maudeName;
+            if (ctx.val != null)
+                ret += ", [" + ctx.val.getText() + "]";
+
+            ret += ") inQueue)";
+            return ret;
         }
         else
             return "(" + visitExpr(ctx.left) + ") " + ctx.op.getText() + " (" + visitExpr(ctx.right) + ")";
@@ -225,6 +246,19 @@ public class LTLVisitor extends LTLParserBaseVisitor<String> {
             if (port.getLfPort().getName().equals(lfName))
                 return port.getName();
         }
+
+        for (MaudeActionInstance action : reactor.logicalActions)
+            if (action.getLfAction().getName().equals(lfName))
+                return action.getName();
+
+        for (MaudeActionInstance action : reactor.physicalActions)
+            if (action.getLfAction().getName().equals(lfName))
+                return action.getName();
+
+        for (MaudeTimerInstance timer : reactor.timers)
+            if (timer.getLfTimer().getName().equals(lfName))
+                return timer.getName();
+
         return null;
     }
 

@@ -1,5 +1,8 @@
 lexer grammar LTLLexer;
 
+COMMA
+    : ','
+    ;
 
 DOT
     : '.'
@@ -41,6 +44,10 @@ IMPL
 
 UNTIL
     : 'U'
+    ;
+
+WUNTIL
+    : 'W'
     ;
 
 NEGATION
@@ -96,7 +103,7 @@ EQ
     ;
 
 NEQ
-    : '=/='
+    : '!='
     ;
 
 LT
@@ -125,6 +132,14 @@ IN
 
 INVOKED
     : 'invoked'
+    ;
+
+EVENT
+    : 'event'
+    ;
+
+INQUEUE
+    : 'inQueue'
     ;
 
 ID

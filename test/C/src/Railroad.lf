@@ -119,9 +119,10 @@ reactor Controller {
 @maudePhysAct(name="a", inReactor="train_w", vals="0 .. 10", period=10, timeNonDet=false)
 @maudePhysAct(inReactor="train_e", name="a", vals="0 .. 10", period=10)
 
-//@maude(analysis="reachability", goal="event(Railroad_controller, westUpdated, true) inEQueue")
-@maude(analysis="reachability", rewrites=200, goal="!(_mode in train_w == 2 /\ _mode in train_e == 2)")
-@maude(analysis="ltl",timeBound=5, goal="<> (controller.2 invoked)")
+@maude(analysis="ltl", timeBound=1000, goal="(event(controller, westUpdated, true) inQueue ) W (_out in train_w != true)")
+//@maude(analysis="reachability", rewrites=200, goal="!(_mode in train_w == 2 /\ _mode in train_e == 2)")
+//@maude(analysis="ltl",timeBound=5, goal="<> (controller.2 invoked)")
+//@maude(analysis="ltl",timeBound=10, goal="<> (_out in train_w != true)")
 //@maude(analysis="simulation", timeBound=10, rewrites=12)
 //@maude(analysis="simulation", timeBound=10)
 //@maude(analysis="simulation", rewrites=120)
