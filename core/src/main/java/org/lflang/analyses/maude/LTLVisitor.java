@@ -96,7 +96,7 @@ public class LTLVisitor extends LTLParserBaseVisitor<String> {
             return _visitUnaryOp(ctx.left);
         }
 
-        return "(" + _visitUnaryOp(ctx.left) + ")" + ctx.op.getText() + "(" + _visitUnaryOp(ctx.right) + ")";
+        return "(" + _visitUnaryOp(ctx.left) + ") " + ctx.op.getText() + " (" + _visitUnaryOp(ctx.right) + ")";
     }
 
     public String visitNoUnaryOp(LTLParser.NoUnaryOpContext ctx) {
