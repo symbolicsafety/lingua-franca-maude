@@ -116,13 +116,14 @@ reactor Controller {
     =}
 }
 
-@maudePhysAct(name="Railroad_train_w_a", vals="0 .. 10", period=10, timeNonDet=false)
-@maudePhysAct(name="Railroad_train_e_a", vals="0 .. 10", period=10)
+@maudePhysAct(name="a", inreactor="train_w", vals="0 .. 10", period=10, timeNonDet=false)
+@maudePhysAct(inreactor="train_e", name="a", vals="0 .. 10", period=10)
 
 //@maude(analysis="reachability", goal="event(Railroad_controller, westUpdated, true) inEQueue")
 //@maude(analysis="reachability", goal="invoked:Railroad_train_w_1")
 //@maude(analysis="reachability", goal="!(Railroad_train_w__mode == 2 && Railroad_train_e__mode == 2)")
-//@maude(analysis="reachability", timeBound=10, goal="!(Railroad_train_w__mode == 2 && Railroad_train_e__mode == 2)")
+@maude(analysis="reachability", timeBound=5, goal="!(_mode in train_w == 2 /\ _mode in train_e == 2)")
+@maude(analysis="ltl",timeBound=5, goal="<> (controller.2 invoked)")
 //@maude(analysis="reachability", timeBound=20, goal="Railroad_train_w__mode == 2 && Railroad_train_e__mode == 2")
 
 main reactor Railroad {

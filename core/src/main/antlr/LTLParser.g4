@@ -23,15 +23,15 @@ conjunction
     ;
 
 binaryOp
-    : left=unaryOp ( UNTIL timeInterval=interval right=unaryOp )? # Until
+    : left=unaryOp ( UNTIL right=unaryOp )? # Until
     ;
 
 unaryOp
     : formula=primary # NoUnaryOp
     | NEGATION formula=primary # Negation
-    | NEXT timeInterval=interval formula=primary # Next
-    | EVENTUALLY timeInterval=interval formula=primary # Eventually
-    | ALWAYS timeInterval=interval formula=primary # Always
+    | NEXT formula=primary # Next
+    | EVENTUALLY formula=primary # Eventually
+    | ALWAYS formula=primary # Always
     ;
 
 primary
@@ -43,13 +43,11 @@ primary
 atomicProp
     : primitive=TRUE
     | primitive=FALSE
+    | lfname=ID IN reactor=ID op=relOp val=INTEGER
+    | reactor=ID DOT reaction=INTEGER INVOKED
     | left=expr op=relOp right=expr
     ;
 
-interval
-    : (LPAREN|LBRACKET) lowerbound=time COMMA upperbound=time (RPAREN|RBRACKET) # Range
-    | LBRACKET instant=time RBRACKET # Singleton
-    ;
 
 time
     : value=INTEGER (unit=ID)?

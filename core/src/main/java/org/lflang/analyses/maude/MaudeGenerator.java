@@ -5,8 +5,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
@@ -19,6 +24,9 @@ import org.lflang.analyses.c.CAst;
 import org.lflang.analyses.c.CToMaudeVisitor;
 import org.lflang.ast.ASTUtils;
 import org.lflang.dsl.CParser.BlockItemListContext;
+import org.lflang.dsl.LTLLexer;
+import org.lflang.dsl.LTLParser;
+import org.lflang.dsl.LTLParser.LtlContext;
 import org.lflang.generator.ActionInstance;
 import org.lflang.generator.CodeBuilder;
 import org.lflang.generator.GeneratorBase;
@@ -70,6 +78,7 @@ public class MaudeGenerator extends GeneratorBase {
         super(context);
         this.maudeProperties = maudeProperties;
         this.maudePhysActProperties = maudePhysActProperties;
+
 
         this.runner = new MaudeRunner(this);
     }
@@ -190,14 +199,24 @@ public class MaudeGenerator extends GeneratorBase {
         code.pr("");
 
         generateMaudeTest();
-
-        code.pr("");
-        code.pr("rew [10] initSystem .");
+        
         code.pr("");
 
         generateAnalysis();
 
         code.pr("quit");
+    }
+
+    private static Optional<String> getParam(Attribute prop, String paramName) {
+        if (prop.getAttrParms() == null) return Optional.empty();
+        return prop.getAttrParms().stream()
+            .filter(p -> paramName.equals(p.getName()))
+            .map(p -> {
+                Object v = p.getValue();      // if it's already String, this is fine; otherwise toString()
+                return v == null ? null : StringUtil.removeQuotes(v.toString());
+            })
+            .filter(Objects::nonNull)
+            .findFirst();
     }
 
     protected void generateMaudeTest() {
@@ -219,52 +238,100 @@ public class MaudeGenerator extends GeneratorBase {
             builder.append("none");
             code.pr(builder.toString());
         } else {
+            if (this.maudePhysActProperties.isEmpty()) {
+                throw new RuntimeException("Physical actions require a environment definition using @maudePhysAct()");
+            }
+
             code.pr(builder.toString());
             code.indent();
-           // for (var physicalAction : this.maudePhysicalActionInstances) {
-                 // This part should be generated from properties???
-                for (Attribute prop : this.maudePhysActProperties) {
-                    String name =
-                        StringUtil.removeQuotes(
-                            prop.getAttrParms().stream()
-                                .filter(attr -> attr.getName().equals("name"))
-                                .findFirst()
-                                .get()
-                                .getValue());
-                    String vals =
-                        StringUtil.removeQuotes(
-                            prop.getAttrParms().stream()
-                                .filter(attr -> attr.getName().equals("vals"))
-                                .findFirst()
-                                .get()
-                                .getValue());
 
-                    // What is unit for period? We need to transform it to nanoseconds
-                    int period = Integer.parseInt(
-                        StringUtil.removeQuotes(
-                            prop.getAttrParms().stream()
-                                .filter(attr -> attr.getName().equals("period"))
-                                .findFirst()
-                                .get()
-                                .getValue()));
-                    if (period<0) period = 0;
-                    
-                    Boolean timeNonDet = true;
-                    Optional<AttrParm> timeNonDetParam =
-                        prop.getAttrParms().stream().filter(attr -> attr.getName().equals("timeNonDet")).findFirst();
-                    if (timeNonDetParam.isPresent()) {
-                        timeNonDet = Boolean.parseBoolean(timeNonDetParam.get().getValue());
-                    }
+            Map<String, Map<String, Attribute>> attrsByReactorThenName = new HashMap<>();
 
-                    MaudeActionInstance physicalAction = this.maudePhysicalActionInstances.stream().
-                        filter(pa -> pa.getLfAction().getFullNameWithJoiner("_").equals(name)).findFirst().get();
+            for (Attribute prop: this.maudePhysActProperties) {
+                String _reactor = getParam(prop, "inreactor").orElseThrow(
+                    () -> new IllegalArgumentException("Attribute 'reactor' missing for physicalAction property")
+                );
+                String _name = getParam(prop, "name").orElseThrow(
+                    () -> new IllegalArgumentException("Attribute 'name' missing for physicalAction property")
+                );
+                Map<String, Attribute> byName = attrsByReactorThenName.computeIfAbsent(_reactor, k -> new HashMap<>());
+
+                // Fail on duplicates of the same (reactor, name)
+                Attribute prev = byName.put(_name, prop);
+                if (prev != null) {
+                    throw new IllegalStateException(
+                        "Duplicate Attribute for reactor=" + _reactor + ", name=" + _name
+                    );
+                }
+            }
+
+            // Validate all physActs and fill
+            for (MaudeActionInstance act: this.maudePhysicalActionInstances) {
+
+                String reactorname = act.getParent().lfReactor.getName();
+                Map<String, Attribute> byName = attrsByReactorThenName.get(act.getParent().lfReactor.getName());
+                if (byName == null) {
+                    throw new RuntimeException("Missing Attribute for reactor=" + act.getParent().lfReactor.getName()
+                        + ", name=" + act.lfAction.getName());
+                }
+
+                Attribute match = byName.get(act.lfAction.getName());
+
+                if (match == null) {
+                    throw new RuntimeException("Missing Attribute for reactor=" + act.getParent().lfReactor.getName()
+                        + ", name=" + act.lfAction.getName());
+                }
+
+                String vals = getParam(match, "vals").orElseThrow(
+                    () -> new IllegalArgumentException("Attribute 'vals' missing for physicalAction property "+getParam(match, "name").orElse("") )
+                );
+
+                int period = Integer.parseInt(getParam(match, "period").orElse("0"));
+                if (period <= 0) { period = 0 ;}
+
+                Boolean timeNonDet = Boolean.parseBoolean(getParam(match, "timeNonDet").orElse("true"));
+
+//
+//
+//            //for (Attribute prop : this.maudePhysActProperties) {
+//                    String name =
+//                        StringUtil.removeQuotes(
+//                            prop.getAttrParms().stream()
+//                                .filter(attr -> attr.getName().equals("name"))
+//                                .findFirst()
+//                                .get()
+//                                .getValue());
+//                    String vals =
+//                        StringUtil.removeQuotes(
+//                            prop.getAttrParms().stream()
+//                                .filter(attr -> attr.getName().equals("vals"))
+//                                .findFirst()
+//                                .get()
+//                                .getValue());
+//
+//                    // What is unit for period? We need to transform it to nanoseconds
+//                    int period = Integer.parseInt(
+//                        StringUtil.removeQuotes(
+//                            prop.getAttrParms().stream()
+//                                .filter(attr -> attr.getName().equals("period"))
+//                                .findFirst()
+//                                .get()
+//                                .getValue()));
+//                    if (period<0) period = 0;
+//
+//                    Boolean timeNonDet = true;
+//                    Optional<AttrParm> timeNonDetParam =
+//                        prop.getAttrParms().stream().filter(attr -> attr.getName().equals("timeNonDet")).findFirst();
+//                    if (timeNonDetParam.isPresent()) {
+//                        timeNonDet = Boolean.parseBoolean(timeNonDetParam.get().getValue());
+//                    }
+
                     builder = new StringBuilder();
-                    builder.append("< (" + physicalAction.getParent().getName() + " . " + physicalAction.getName() + " ): PhysAct | ");
+                    builder.append("< (" + act.getParent().getName() + " . " + act.getName() + " ): PhysAct | ");
                     builder.append("leftOfPeriod : "+period+", period : "+period+", possibleValues : "+vals //+"[0] : [1], "
                         + ", timeNonDet : "+timeNonDet+" >");
                     code.pr(builder.toString());
                 }
-          //  }
             code.unindent();
         }
         code.pr(" > ");
@@ -423,15 +490,6 @@ public class MaudeGenerator extends GeneratorBase {
                 // Build an AST.
                 BuildAstParseTreeVisitor buildAstVisitor = new BuildAstParseTreeVisitor(messageReporter);
                 CAst.AstNode ast = buildAstVisitor.visitBlockItemList(parseTree);
-
-                // VariablePrecedenceVisitor
-               // VariablePrecedenceVisitor precVisitor = new VariablePrecedenceVisitor();
-               // precVisitor.visit(ast);
-
-                // Convert the AST to If Normal Form (INF).
-               // IfNormalFormAstVisitor infVisitor = new IfNormalFormAstVisitor();
-               // infVisitor.visit(ast, new ArrayList<CAst.AstNode>());
-                //CAst.StatementSequenceNode inf = infVisitor.INF;
 
                 CToMaudeVisitor c2mVisitor = new CToMaudeVisitor(this, reaction);
 
@@ -604,32 +662,23 @@ public class MaudeGenerator extends GeneratorBase {
             code.pr("op "+actionVariable.getName() + " : -> " + actionVariable.getType() +" [ctor] .");
         }
     }
-/*
-    protected void generateBoundedOMOD(String timeBound) {
-        code.pr("omod TIME-BOUNDED-"+this.main.getName().toUpperCase() +" is");
-        code.indent();
-        code.pr("including TEST-" + this .main.getName().toUpperCase() + " .");
-        code.pr("including TIME-BOUNDED-DYNAMICS-PARAMETRIC .");
-        code.pr("eq timeBound = "+timeBound+" .");
-        code.unindent();
-        code.pr("endom");
-    }
 
-    protected void generateUnboundedOMOD() {
-        code.pr("omod UNBOUNDED-"+this.main.getName().toUpperCase() +" is");
-        code.indent();
-        code.pr("including TEST-" + this .main.getName().toUpperCase() + " .");
-        code.pr("including UNBOUNDED-ANALYSIS-DYNAMICS .");
-        code.unindent();
-        code.pr("endom");
-    }
-*/
     protected void generateAnalysis() {
-        // We modified Maude code such that single module is used for both bounded and unbounded analysis
         code.pr("omod ANALYSIS-"+this.main.getName().toUpperCase() +" is");
         code.indent();
         code.pr("including TEST-" + this .main.getName().toUpperCase() + " .");
-        code.pr("including UNBOUNDED-AND-BOUNDED-ANALYSIS-DYNAMICS .");
+        code.pr("including LF-PROP .");
+        code.pr("including SEARCH-GOAL .");
+        code.unindent();
+        code.pr("endom");
+        code.pr("");
+
+        code.pr("omod MODELCHECKER-"+this.main.getName().toUpperCase() +" is");
+        code.indent();
+        code.pr("including TEST-" + this .main.getName().toUpperCase() + " .");
+        code.pr("including LF-PROP .");
+
+        code.pr("including MODEL-CHECKER .");
         code.unindent();
         code.pr("endom");
         code.pr("");
@@ -665,16 +714,51 @@ public class MaudeGenerator extends GeneratorBase {
                 mode = modeParam.get().getValue();
             }
 
-            StringBuilder builder = new StringBuilder();
-            builder.append("search [1] initSystem timeBound ");
-            // Decide what kind of analysis to do
-            if (timeBound > 0) {
-                builder.append(timeBound);
-            } else builder.append("INF");
-            builder.append(" =>"+mode+" {C:Configuration} timeBound TI:TimeInf");
-            builder.append(" such that "+goal);
-            code.pr(builder.toString());
-            code.pr("");
+            if (analysis.equalsIgnoreCase("reachability")) {
+
+                StringBuilder builder = new StringBuilder();
+                builder.append("search [1] in ANALYSIS-"+this.main.getName().toUpperCase() + " : initSystem timeBound ");
+                // Decide what kind of analysis to do
+                if (timeBound > 0) {
+                    builder.append(timeBound);
+                } else builder.append("INF");
+                builder.append(" =>"+mode+" {C:Configuration} timeBound TI:TimeInf");
+                LTLLexer lexer = new LTLLexer(CharStreams.fromString(goal));
+                CommonTokenStream tokens = new CommonTokenStream(lexer);
+                LTLParser parser = new LTLParser(tokens);
+                LtlContext ltlCtx = parser.ltl();
+                LTLVisitor visitor = new LTLVisitor(this.maudeReactorInstances);
+
+                String genGoal = visitor.visitLtl(ltlCtx);
+                builder.append(" such that {C:Configuration} |= "+genGoal + " .");
+                code.pr(builder.toString());
+                code.pr("");
+            }
+            else if (analysis.equalsIgnoreCase("ltl")) {
+
+
+                StringBuilder builder = new StringBuilder();
+                builder.append("red in MODELCHECKER-"+this.main.getName().toUpperCase()+" : modelCheck(initSystem timeBound ");
+                // Decide what kind of analysis to do
+                if (timeBound > 0) {
+                    builder.append(timeBound);
+                } else builder.append("INF");
+
+                LTLLexer lexer = new LTLLexer(CharStreams.fromString(goal));
+                CommonTokenStream tokens = new CommonTokenStream(lexer);
+                LTLParser parser = new LTLParser(tokens);
+                LtlContext ltlCtx = parser.ltl();
+                LTLVisitor visitor = new LTLVisitor(this.maudeReactorInstances);
+
+                String genGoal = visitor.visitLtl(ltlCtx);
+                builder.append(" , "+genGoal + " ) .");
+                code.pr(builder.toString());
+                code.pr("");
+
+            }
+
+
+
         }
     }
 

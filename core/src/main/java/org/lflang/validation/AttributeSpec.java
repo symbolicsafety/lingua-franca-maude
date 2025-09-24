@@ -240,6 +240,7 @@ public class AttributeSpec {
           "maudePhysAct",
           new AttributeSpec(
               List.of(
+                  new AttrParamSpec("inreactor", AttrParamType.STRING, false),
                   new AttrParamSpec("name", AttrParamType.STRING, false),
                   new AttrParamSpec("vals", AttrParamType.STRING, false),
                   new AttrParamSpec("period", AttrParamType.INT, false),

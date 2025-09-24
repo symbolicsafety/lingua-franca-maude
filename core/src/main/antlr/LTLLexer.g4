@@ -1,7 +1,8 @@
 lexer grammar LTLLexer;
 
-COMMA
-    : ','
+
+DOT
+    : '.'
     ;
 
 LPAREN
@@ -116,6 +117,14 @@ GE
 
 INTEGER
     : [0-9]+
+    ;
+
+IN
+    : 'in'
+    ;
+
+INVOKED
+    : 'invoked'
     ;
 
 ID

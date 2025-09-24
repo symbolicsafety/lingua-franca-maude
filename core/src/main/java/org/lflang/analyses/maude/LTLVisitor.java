@@ -11,10 +11,13 @@ import org.lflang.generator.NamedInstance;
 public class LTLVisitor extends LTLParserBaseVisitor<String> {
 
     private List<NamedInstance> instances = new ArrayList<NamedInstance>();
+    public List<MaudeReactorInstance> reactors = new ArrayList<>();
 
     protected CodeBuilder code = new CodeBuilder();
 
-    public LTLVisitor() {    }
+    public LTLVisitor(List<MaudeReactorInstance> reactors) {
+        this.reactors.addAll(reactors);
+    }
 
     public String visitLtl(LTLParser.LtlContext ctx) {
         return visitEquivalence(ctx.equivalence());
@@ -26,7 +29,7 @@ public class LTLVisitor extends LTLParserBaseVisitor<String> {
             return visitImplication(ctx.left);
         }
 
-        return visitImplication(ctx.left)  + " <->"  +
+        return visitImplication(ctx.left)  + " <-> "  +
              visitImplication(ctx.right);
     }
 
@@ -45,7 +48,7 @@ public class LTLVisitor extends LTLParserBaseVisitor<String> {
                 "("
                     + visitConjunction(ctx.terms.get(i))
                     + ")"
-                    + (i == ctx.terms.size() - 1 ? "" : "\\/");
+                    + (i == ctx.terms.size() - 1 ? "" : " \\/ ");
         }
         return str;
     }
@@ -57,7 +60,7 @@ public class LTLVisitor extends LTLParserBaseVisitor<String> {
                 "("
                     + visitUntil(
                     (LTLParser.UntilContext) ctx.terms.get(i)) +
-                    ")" + (i == ctx.terms.size() - 1 ? "" : "/\\");
+                    ")" + (i == ctx.terms.size() - 1 ? "" : " /\\ ");
         }
         return str;
     }
@@ -119,20 +122,33 @@ public class LTLVisitor extends LTLParserBaseVisitor<String> {
         if (ctx.atom != null)
             return visitAtomicProp(ctx.atom);
         else if (ctx.id != null) {
-            // Check if the ID is a reaction.
-            //FIXME: as in MTLvisitor, this is not robust
-            if (ctx.id.getText().contains("reaction")) {
-            }
-            else if (ctx.id.getText().contains("invoked")) {
-
-            }
+            throw new RuntimeException("Unrecognized id "+ctx.id.getText());
         }
         else return visitLtl(ctx.formula);
-        return "";
+
     }
 
     public String visitAtomicProp(LTLParser.AtomicPropContext ctx) {
         if (ctx.primitive != null) return "[" + ctx.primitive.getText() + "]";
+        else if (ctx.lfname  != null) {
+            if (ctx.reactor == null)
+                throw new RuntimeException("Reactor not defined for "+ctx.lfname.getText() +" IN");
+            MaudeReactorInstance reactor = getMaudeReactorByLFname(ctx.reactor.getText());
+            if (reactor == null)
+                throw new RuntimeException("Could not find reactor "+ctx.reactor.getText() + " used for expr "+ctx.lfname.getText() + " IN " + ctx.reactor.getText());
+
+            String maudeName = getMaudeobjByLFname(reactor, ctx.lfname.getText());
+            if (maudeName == null)
+                throw new RuntimeException("Could not find component " + ctx.lfname.getText() + " IN "+ctx.reactor.getText());
+
+            return "(" + maudeName + " in " + reactor.getName() + " " + ctx.op.getText() + " [" + ctx.val.getText() + "] )";
+        }
+        else if (ctx.reaction != null) {
+            MaudeReactorInstance reactor = getMaudeReactorByLFname(ctx.reactor.getText());
+            if (reactor == null)
+                throw new RuntimeException("Could not find reactor "+ctx.reactor.getText() + " used for expr "+ctx.reactor.getText() + "." + ctx.reaction.getText() + " invoked");
+            return "((" + reactor.getName() + " . " + ctx.reaction.getText() + ") invoked )";
+        }
         else
             return "(" + visitExpr(ctx.left) + ") " + ctx.op.getText() + " (" + visitExpr(ctx.right) + ")";
     }
@@ -143,7 +159,7 @@ public class LTLVisitor extends LTLParserBaseVisitor<String> {
             return ctx.ID().getText();
         }
         else if (ctx.INTEGER() != null) {
-            return ctx.INTEGER().getText();
+            return "[" + ctx.INTEGER().getText() + "]";
         }
 
         else return visitSum(ctx.sum());
@@ -187,5 +203,29 @@ public class LTLVisitor extends LTLParserBaseVisitor<String> {
         return str;
     }
 
+    private MaudeReactorInstance getMaudeReactorByLFname(String lfReactorName) {
+        for (MaudeReactorInstance r : this.reactors) {
+            String reactorName = r.lfReactor.getName();
+            if (r.lfReactor.getName().equals(lfReactorName))
+                return r;
+        }
+        return null;
+    }
+
+    private String getMaudeobjByLFname(MaudeReactorInstance reactor, String lfName) {
+        for (MaudeStateInstance svar : reactor.stateVars) {
+            if (svar.getLfStateVar().getName().equals(lfName))
+                return svar.getName();
+        }
+        for (MaudePortInstance port : reactor.inPorts) {
+            if (port.getLfPort().getName().equals(lfName))
+                return port.getName();
+        }
+        for (MaudePortInstance port : reactor.outPorts) {
+            if (port.getLfPort().getName().equals(lfName))
+                return port.getName();
+        }
+        return null;
+    }
 
 }
