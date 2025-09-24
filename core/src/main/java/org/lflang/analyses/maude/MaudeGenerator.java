@@ -199,7 +199,7 @@ public class MaudeGenerator extends GeneratorBase {
         code.pr("");
 
         generateMaudeTest();
-        
+
         code.pr("");
 
         generateAnalysis();
@@ -248,7 +248,7 @@ public class MaudeGenerator extends GeneratorBase {
             Map<String, Map<String, Attribute>> attrsByReactorThenName = new HashMap<>();
 
             for (Attribute prop: this.maudePhysActProperties) {
-                String _reactor = getParam(prop, "inreactor").orElseThrow(
+                String _reactor = getParam(prop, "inReactor").orElseThrow(
                     () -> new IllegalArgumentException("Attribute 'reactor' missing for physicalAction property")
                 );
                 String _name = getParam(prop, "name").orElseThrow(
@@ -675,10 +675,17 @@ public class MaudeGenerator extends GeneratorBase {
 
         code.pr("omod MODELCHECKER-"+this.main.getName().toUpperCase() +" is");
         code.indent();
-        code.pr("including TEST-" + this .main.getName().toUpperCase() + " .");
+        code.pr("including TEST-" + this.main.getName().toUpperCase() + " .");
         code.pr("including LF-PROP .");
-
         code.pr("including MODEL-CHECKER .");
+        code.unindent();
+        code.pr("endom");
+        code.pr("");
+
+        code.pr("omod SIMULATION-" + this.main.getName().toUpperCase() + " is");
+        code.indent();
+        code.pr("including TEST-" + this.main.getName().toUpperCase() + " .");
+        code.pr("including TIMED-SIMULATION-DYNAMICS .");
         code.unindent();
         code.pr("endom");
         code.pr("");
@@ -691,21 +698,33 @@ public class MaudeGenerator extends GeneratorBase {
                         .findFirst()
                         .get()
                         .getValue());
-            String goal =
-                StringUtil.removeQuotes(
-                    prop.getAttrParms().stream()
-                        .filter(attr -> attr.getName().equals("goal"))
-                        .findFirst()
-                        .get()
-                        .getValue());
 
-            // What is unit for timeBound? We need to transform it to nanoseconds
-            int timeBound;
+            String goal = "";
+            Optional<AttrParm> goalParam = prop.getAttrParms().stream()
+                .filter(attr -> attr.getName().equals("goal"))
+                .findFirst();
+
+            if (goalParam.isPresent()) {
+                goal = StringUtil.removeQuotes(goalParam.get().getValue());
+            }
+
+
+            String timeBound = "INF";
             Optional<AttrParm> timeBoundParam =
                 prop.getAttrParms().stream().filter(attr -> attr.getName().equals("timeBound")).findFirst();
             if (timeBoundParam.isPresent()) {
-                timeBound = Integer.parseInt(timeBoundParam.get().getValue());
-            } else timeBound=-1;
+                // What is unit for timeBound? We need to transform it to nanoseconds
+                timeBound = timeBoundParam.get().getValue();
+            }
+
+            String rewrites = "";
+            Optional<AttrParm> rewritesParam =
+                prop.getAttrParms().stream().filter(attr -> attr.getName().equals("rewrites")).findFirst();
+            if (rewritesParam.isPresent()) {
+                rewrites = rewritesParam.get().getValue();
+                if (Integer.parseInt(rewrites) < 1)
+                    throw new RuntimeException("rewrites must be greater than 0");
+            }
 
             String mode = "*";
             Optional<AttrParm> modeParam =
@@ -716,12 +735,19 @@ public class MaudeGenerator extends GeneratorBase {
 
             if (analysis.equalsIgnoreCase("reachability")) {
 
+                if (goal.isEmpty())
+                    throw new RuntimeException("Reachability analysis requires goal to be defined!");
+
                 StringBuilder builder = new StringBuilder();
-                builder.append("search [1] in ANALYSIS-"+this.main.getName().toUpperCase() + " : initSystem timeBound ");
+                builder.append("search [1");
+                if (!rewrites.isEmpty()) {
+                    builder.append("," + rewrites);
+                }
+                builder.append("] in ANALYSIS-"+this.main.getName().toUpperCase() + " : initSystem timeBound ");
                 // Decide what kind of analysis to do
-                if (timeBound > 0) {
-                    builder.append(timeBound);
-                } else builder.append("INF");
+
+                builder.append(timeBound);
+
                 builder.append(" =>"+mode+" {C:Configuration} timeBound TI:TimeInf");
                 LTLLexer lexer = new LTLLexer(CharStreams.fromString(goal));
                 CommonTokenStream tokens = new CommonTokenStream(lexer);
@@ -735,14 +761,11 @@ public class MaudeGenerator extends GeneratorBase {
                 code.pr("");
             }
             else if (analysis.equalsIgnoreCase("ltl")) {
-
+                if (goal.isEmpty())
+                    throw new RuntimeException("LTL analysis requires goal to be defined!");
 
                 StringBuilder builder = new StringBuilder();
-                builder.append("red in MODELCHECKER-"+this.main.getName().toUpperCase()+" : modelCheck(initSystem timeBound ");
-                // Decide what kind of analysis to do
-                if (timeBound > 0) {
-                    builder.append(timeBound);
-                } else builder.append("INF");
+                builder.append("red in MODELCHECKER-"+this.main.getName().toUpperCase()+" : modelCheck(initSystem timeBound "+timeBound);
 
                 LTLLexer lexer = new LTLLexer(CharStreams.fromString(goal));
                 CommonTokenStream tokens = new CommonTokenStream(lexer);
@@ -756,8 +779,17 @@ public class MaudeGenerator extends GeneratorBase {
                 code.pr("");
 
             }
+            else if (analysis.equalsIgnoreCase("simulation")) {
+                StringBuilder builder = new StringBuilder();
+                builder.append("rew ");
+                if (!rewrites.isEmpty()) {
+                    builder.append("[" + rewrites+"] ");
+                }
 
-
+                builder.append("in SIMULATION-"+this.main.getName().toUpperCase()+" : initSystem timeBound "+timeBound+ " .");
+                code.pr(builder.toString());
+                code.pr("");
+            }
 
         }
     }

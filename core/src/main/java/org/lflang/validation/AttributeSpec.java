@@ -240,7 +240,7 @@ public class AttributeSpec {
           "maudePhysAct",
           new AttributeSpec(
               List.of(
-                  new AttrParamSpec("inreactor", AttrParamType.STRING, false),
+                  new AttrParamSpec("inReactor", AttrParamType.STRING, false),
                   new AttrParamSpec("name", AttrParamType.STRING, false),
                   new AttrParamSpec("vals", AttrParamType.STRING, false),
                   new AttrParamSpec("period", AttrParamType.INT, false),
@@ -251,7 +251,8 @@ public class AttributeSpec {
               List.of(
                   new AttrParamSpec("analysis", AttrParamType.STRING, false),
                   new AttrParamSpec("timeBound", AttrParamType.INT, true),
-                  new AttrParamSpec("goal", AttrParamType.STRING, false),
+                  new AttrParamSpec("goal", AttrParamType.STRING, true),
+                  new AttrParamSpec("rewrites", AttrParamType.INT, true),
                   new AttrParamSpec("mode", AttrParamType.STRING, true))));
     ATTRIBUTE_SPECS_BY_NAME.put("_c_body", new AttributeSpec(null));
     ATTRIBUTE_SPECS_BY_NAME.put(
