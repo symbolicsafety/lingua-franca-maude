@@ -129,7 +129,13 @@ public class LTLVisitor extends LTLParserBaseVisitor<String> {
     }
 
     public String visitAtomicProp(LTLParser.AtomicPropContext ctx) {
-        if (ctx.primitive != null) return "[" + ctx.primitive.getText() + "]";
+        if (ctx.primitive != null) {
+            String ret = "";
+            if (ctx.primitive.getText().equals("true") || ctx.primitive.getText().equals("false"))
+               return "[" + ctx.primitive.getText() + "]";
+            else
+                return ctx.primitive.getText();
+        }
         else if (ctx.lfname  != null) {
             if (ctx.reactor == null)
                 throw new RuntimeException("Reactor not defined for "+ctx.lfname.getText() +" IN");
