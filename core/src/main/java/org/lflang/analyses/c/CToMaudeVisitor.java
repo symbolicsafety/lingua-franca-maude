@@ -261,6 +261,9 @@ public class CToMaudeVisitor extends CBaseAstVisitor<String> {
 
     @Override
     public String visitVariableNode(VariableNode node) {
+        if (node.type.name().equals("UNKNOWN") && (node.name.equalsIgnoreCase("true") || node.name.equalsIgnoreCase("false"))) {
+            return "["+node.name.toLowerCase()+"]";
+        }
         NamedInstance instance = getInstanceByName(node.name);
         MaudeStateInstance mState = parent.getMaudeStateVar((StateVariableInstance) instance);
         return mState.getName();

@@ -328,6 +328,10 @@ public class MaudeGenerator extends GeneratorBase {
 
                     builder = new StringBuilder();
                     builder.append("< (" + act.getParent().getName() + " . " + act.getName() + " ): PhysAct | ");
+                    vals = vals.replaceAll("[Tt][Rr][Uu][Ee]", "[true]");
+                    vals = vals.replaceAll("[Ff][Aa][Ll][Ss][Ee]", "[false]");
+                    vals = vals.replaceAll(",",":");
+                    vals = vals.replaceAll("([0-9]+)", "[$1]");
                     builder.append("leftOfPeriod : "+period+", period : "+period+", possibleValues : "+vals //+"[0] : [1], "
                         + ", timeNonDet : "+timeNonDet+" >");
                     code.pr(builder.toString());
