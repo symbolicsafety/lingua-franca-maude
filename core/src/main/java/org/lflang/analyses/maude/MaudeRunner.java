@@ -69,8 +69,7 @@ public class MaudeRunner {
                     maudeBase.toString(),
                     List.of(
                         lf_maudeBase.toString(),
-                        path.toString(),
-                        "-xml-log="+path.toString()+".xml"
+                        path.toString()
                     ),
                     generator.outputDir);
             command.run();

@@ -286,56 +286,24 @@ public class MaudeGenerator extends GeneratorBase {
                     () -> new IllegalArgumentException("Attribute 'vals' missing for physicalAction property "+getParam(match, "name").orElse("") )
                 );
 
-                int period = Integer.parseInt(getParam(match, "period").orElse("0"));
+                long period = Long.parseLong(getParam(match, "period").orElse("0"));
                 if (period <= 0) { period = 0 ;}
+                //assume milliseconds and convert to nanoseconds. Add timeUnit conversions later
+                period *= 1000000L;
 
                 Boolean timeNonDet = Boolean.parseBoolean(getParam(match, "timeNonDet").orElse("true"));
 
-//
-//
-//            //for (Attribute prop : this.maudePhysActProperties) {
-//                    String name =
-//                        StringUtil.removeQuotes(
-//                            prop.getAttrParms().stream()
-//                                .filter(attr -> attr.getName().equals("name"))
-//                                .findFirst()
-//                                .get()
-//                                .getValue());
-//                    String vals =
-//                        StringUtil.removeQuotes(
-//                            prop.getAttrParms().stream()
-//                                .filter(attr -> attr.getName().equals("vals"))
-//                                .findFirst()
-//                                .get()
-//                                .getValue());
-//
-//                    // What is unit for period? We need to transform it to nanoseconds
-//                    int period = Integer.parseInt(
-//                        StringUtil.removeQuotes(
-//                            prop.getAttrParms().stream()
-//                                .filter(attr -> attr.getName().equals("period"))
-//                                .findFirst()
-//                                .get()
-//                                .getValue()));
-//                    if (period<0) period = 0;
-//
-//                    Boolean timeNonDet = true;
-//                    Optional<AttrParm> timeNonDetParam =
-//                        prop.getAttrParms().stream().filter(attr -> attr.getName().equals("timeNonDet")).findFirst();
-//                    if (timeNonDetParam.isPresent()) {
-//                        timeNonDet = Boolean.parseBoolean(timeNonDetParam.get().getValue());
-//                    }
 
-                    builder = new StringBuilder();
-                    builder.append("< (" + act.getParent().getName() + " . " + act.getName() + " ): PhysAct | ");
-                    vals = vals.replaceAll("[Tt][Rr][Uu][Ee]", "[true]");
-                    vals = vals.replaceAll("[Ff][Aa][Ll][Ss][Ee]", "[false]");
-                    vals = vals.replaceAll(",",":");
-                    vals = vals.replaceAll("([0-9]+)", "[$1]");
-                    builder.append("leftOfPeriod : "+period+", period : "+period+", possibleValues : "+vals //+"[0] : [1], "
-                        + ", timeNonDet : "+timeNonDet+" >");
-                    code.pr(builder.toString());
-                }
+                builder = new StringBuilder();
+                builder.append("< (" + act.getParent().getName() + " . " + act.getName() + " ): PhysAct | ");
+                vals = vals.replaceAll("[Tt][Rr][Uu][Ee]", "[true]");
+                vals = vals.replaceAll("[Ff][Aa][Ll][Ss][Ee]", "[false]");
+                vals = vals.replaceAll(",",":");
+                vals = vals.replaceAll("([0-9]+)", "[$1]");
+                builder.append("leftOfPeriod : "+period+", period : "+period+", possibleValues : "+vals //+"[0] : [1], "
+                    + ", timeNonDet : "+timeNonDet+" >");
+                code.pr(builder.toString());
+            }
             code.unindent();
         }
         code.pr(" > ");
@@ -680,7 +648,7 @@ public class MaudeGenerator extends GeneratorBase {
         code.pr("omod MODELCHECKER-"+this.main.getName().toUpperCase() +" is");
         code.indent();
         code.pr("including TEST-" + this.main.getName().toUpperCase() + " .");
-        code.pr("including LF-PROP .");
+        code.pr("including LF-OUTPUT-COUNTEREXAMPLE .");
         code.pr("including MODEL-CHECKER .");
         code.unindent();
         code.pr("endom");
@@ -719,6 +687,8 @@ public class MaudeGenerator extends GeneratorBase {
             if (timeBoundParam.isPresent()) {
                 // What is unit for timeBound? We need to transform it to nanoseconds
                 timeBound = timeBoundParam.get().getValue();
+                //assume milliseconds for now and convert to nanoseconds. Add specifiable timeUnit conversion later
+                timeBound = String.valueOf(Long.parseLong(timeBound) * 1000000L);
             }
 
             String rewrites = "";
