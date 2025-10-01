@@ -702,10 +702,12 @@ public class MaudeGenerator extends GeneratorBase {
 
             String mode = "*";
             Optional<AttrParm> modeParam =
-                prop.getAttrParms().stream().filter(attr -> attr.getName().equals("mode")).findFirst();
+                prop.getAttrParms().stream().filter(attr -> attr.getName().equals("type")).findFirst();
             if (modeParam.isPresent()) {
-                mode = modeParam.get().getValue();
+                mode = StringUtil.removeQuotes(modeParam.get().getValue());
             }
+            if (!mode.matches("[\\*,!1+]"))
+                throw new RuntimeException("invalid type: \"" + mode+"\". Allowed values are one of [1, +, *, !] .");
 
             if (analysis.equalsIgnoreCase("reachability")) {
 

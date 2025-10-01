@@ -253,7 +253,7 @@ public class AttributeSpec {
                   new AttrParamSpec("timeBound", AttrParamType.INT, true),
                   new AttrParamSpec("goal", AttrParamType.STRING, true),
                   new AttrParamSpec("rewrites", AttrParamType.INT, true),
-                  new AttrParamSpec("mode", AttrParamType.STRING, true))));
+                  new AttrParamSpec("type", AttrParamType.STRING, true))));
     ATTRIBUTE_SPECS_BY_NAME.put("_c_body", new AttributeSpec(null));
     ATTRIBUTE_SPECS_BY_NAME.put(
         "_tpoLevel",
