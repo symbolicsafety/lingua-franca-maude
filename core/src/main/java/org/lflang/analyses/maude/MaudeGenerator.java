@@ -639,7 +639,7 @@ public class MaudeGenerator extends GeneratorBase {
         code.pr("omod ANALYSIS-"+this.main.getName().toUpperCase() +" is");
         code.indent();
         code.pr("including TEST-" + this .main.getName().toUpperCase() + " .");
-        code.pr("including LF-PROP .");
+        code.pr("including LF-PROP-EXT .");
         code.pr("including SEARCH-GOAL .");
         code.unindent();
         code.pr("endom");
@@ -649,6 +649,7 @@ public class MaudeGenerator extends GeneratorBase {
         code.indent();
         code.pr("including TEST-" + this.main.getName().toUpperCase() + " .");
         code.pr("including LF-OUTPUT-COUNTEREXAMPLE .");
+        code.pr("including LF-PROP-EXT .");
         code.pr("including MODEL-CHECKER .");
         code.unindent();
         code.pr("endom");

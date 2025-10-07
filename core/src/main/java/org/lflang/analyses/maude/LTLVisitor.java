@@ -132,7 +132,7 @@ public class LTLVisitor extends LTLParserBaseVisitor<String> {
         if (ctx.primitive != null) {
             String ret = "";
             if (ctx.primitive.getText().equals("true") || ctx.primitive.getText().equals("false"))
-               return "[" + ctx.primitive.getText() + "]";
+               return "@ [" + ctx.primitive.getText() + "]";
             else
                 return ctx.primitive.getText();
         }
@@ -147,10 +147,25 @@ public class LTLVisitor extends LTLParserBaseVisitor<String> {
             if (maudeName == null)
                 throw new RuntimeException("Could not find component " + ctx.lfname.getText() + " IN "+ctx.reactor.getText());
 
-            if (ctx.bop == null)
-                return "(" + maudeName + " in " + reactor.getName() + " " + ctx.op.getText() + " [" + ctx.val.getText() + "] )";
-            else
-                return "(" + maudeName + " in " + reactor.getName() + " " + ctx.bop.getText() + " [" + ctx.bval.getText() + "] )";
+            String op = "";
+            if (ctx.bop == null) {
+                op = ctx.op.getText();
+                if (op.equals("=="))
+                    op = "===";
+                else if (op.equals("!="))
+                    op = "==/=";
+                return "( (@ " + maudeName + " in " + reactor.getName() + ") " + op
+                    + " @ [" + ctx.val.getText() + "] )";
+            }
+            else {
+                op = ctx.bop.getText();
+                if (op.equals("=="))
+                    op = "===";
+                else if (op.equals("!="))
+                    op = "==/=";
+                return "( (@ " + maudeName + " in " + reactor.getName() + ") " + op
+                    + " @ [" + ctx.bval.getText() + "] )";
+            }
         }
         else if (ctx.reaction != null) {
             MaudeReactorInstance reactor = getMaudeReactorByLFname(ctx.reactor.getText());
@@ -176,8 +191,16 @@ public class LTLVisitor extends LTLParserBaseVisitor<String> {
             ret += ") inQueue)";
             return ret;
         }
-        else
-            return "(" + visitExpr(ctx.left) + ") " + ctx.op.getText() + " (" + visitExpr(ctx.right) + ")";
+        else {
+            String op = ctx.op.getText();
+            if (op.equals("=="))
+                op = "===";
+            else if (op.equals("!="))
+                op = "==/=";
+
+            return "(" + visitExpr(ctx.left) + ") " + op + " (" + visitExpr(ctx.right)
+                + ")";
+        }
     }
 
     public String visitExpr(LTLParser.ExprContext ctx) {
@@ -186,7 +209,7 @@ public class LTLVisitor extends LTLParserBaseVisitor<String> {
             return ctx.ID().getText();
         }
         else if (ctx.INTEGER() != null) {
-            return "[" + ctx.INTEGER().getText() + "]";
+            return "@ [" + ctx.INTEGER().getText() + "]";
         }
 
         else return visitSum(ctx.sum());
