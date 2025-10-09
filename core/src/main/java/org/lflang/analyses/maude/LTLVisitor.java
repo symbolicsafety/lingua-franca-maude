@@ -79,27 +79,30 @@ public class LTLVisitor extends LTLParserBaseVisitor<String> {
                     return "[] (" + _visitUnaryOp(_ctx.nested) + ")";
                 case LTLParser.EVENTUALLY:
                     return "<> (" + _visitUnaryOp(_ctx.nested) + ")";
+                case LTLParser.NEXT:
+                    return "O (" + _visitUnaryOp(_ctx.nested) + ")";
+
                 default:
                     throw new RuntimeException("Unexpected nested operand "+_ctx.nuop.getText());
             }
 
         }
 
-        if (ctx instanceof LTLParser.NegationContext _ctx) {
-            return visitNegation(_ctx);
-        }
-
-        if (ctx instanceof LTLParser.NextContext _ctx) {
-            return visitNext(_ctx);
-        }
-
-        if (ctx instanceof LTLParser.AlwaysContext _ctx) {
-            return visitAlways(_ctx);
-        }
-
-        if (ctx instanceof LTLParser.EventuallyContext _ctx) {
-            return visitEventually(_ctx);
-        }
+//        if (ctx instanceof LTLParser.NegationContext _ctx) {
+//            return visitNegation(_ctx);
+//        }
+//
+//        if (ctx instanceof LTLParser.NextContext _ctx) {
+//            return visitNext(_ctx);
+//        }
+//
+//        if (ctx instanceof LTLParser.AlwaysContext _ctx) {
+//            return visitAlways(_ctx);
+//        }
+//
+//        if (ctx instanceof LTLParser.EventuallyContext _ctx) {
+//            return visitEventually(_ctx);
+//        }
 
         throw new RuntimeException("Unexpected context: " + ctx.getText());
         //return "";
@@ -119,20 +122,20 @@ public class LTLVisitor extends LTLParserBaseVisitor<String> {
         return visitPrimary(ctx.formula);
     }
 
-    public String visitNegation(LTLParser.NegationContext ctx) {
-        return "~ (" + visitPrimary(ctx.formula) + ")";
-    }
-
-    public String visitNext(LTLParser.NextContext ctx) {
-        return "O (" + visitPrimary(ctx.formula) + ")";
-    }
-
-    public String visitAlways(LTLParser.AlwaysContext ctx) {
-        return "[] (" + visitPrimary(ctx.formula) + ")";
-    }
-    public String visitEventually(LTLParser.EventuallyContext ctx) {
-        return "<> (" + visitPrimary(ctx.formula) +")";
-    }
+//    public String visitNegation(LTLParser.NegationContext ctx) {
+//        return "~ (" + visitPrimary(ctx.formula) + ")";
+//    }
+//
+//    public String visitNext(LTLParser.NextContext ctx) {
+//        return "O (" + visitPrimary(ctx.formula) + ")";
+//    }
+//
+//    public String visitAlways(LTLParser.AlwaysContext ctx) {
+//        return "[] (" + visitPrimary(ctx.formula) + ")";
+//    }
+//    public String visitEventually(LTLParser.EventuallyContext ctx) {
+//        return "<> (" + visitPrimary(ctx.formula) +")";
+//    }
     public String visitPrimary(LTLParser.PrimaryContext ctx) {
         if (ctx.atom != null)
             return visitAtomicProp(ctx.atom);
@@ -219,9 +222,10 @@ public class LTLVisitor extends LTLParserBaseVisitor<String> {
     }
 
     public String visitExpr(LTLParser.ExprContext ctx) {
-        if (ctx.ID() != null) {
+        if (ctx.lfname != null) {
             //TODO: Translate LF name to Maude name
-            return ctx.ID().getText();
+
+            return ctx.lfname.getText();
         }
         else if (ctx.INTEGER() != null) {
             return "@ [" + ctx.INTEGER().getText() + "]";

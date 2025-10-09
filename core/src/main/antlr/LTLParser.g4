@@ -28,11 +28,7 @@ binaryOp
 
 unaryOp
     : formula=primary # NoUnaryOp
-    | nuop=(NEGATION | ALWAYS | EVENTUALLY) nested=unaryOp # Nested
-    | NEGATION formula=primary # Negation
-    | NEXT formula=primary # Next
-    | EVENTUALLY formula=primary # Eventually
-    | ALWAYS formula=primary # Always
+    | nuop=(NEGATION | ALWAYS | EVENTUALLY | NEXT) nested=unaryOp # Nested
     ;
 
 primary
@@ -77,7 +73,7 @@ relOp
     ;
 
 expr
-    : ID
+    : lfname=ID IN reactor=ID
     | LPAREN sum RPAREN
     | INTEGER
     ;
