@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.lflang.dsl.LTLParser;
+import org.lflang.dsl.LTLParser.NestedContext;
 import org.lflang.dsl.LTLParserBaseVisitor;
 import org.lflang.generator.CodeBuilder;
 import org.lflang.generator.NamedInstance;
@@ -70,6 +71,20 @@ public class LTLVisitor extends LTLParserBaseVisitor<String> {
         if (ctx instanceof LTLParser.NoUnaryOpContext _ctx) {
             return visitNoUnaryOp(_ctx);
         }
+        if (ctx instanceof LTLParser.NestedContext _ctx) {
+            switch (_ctx.nuop.getType()) {
+                case LTLParser.NEGATION:
+                    return "~ (" + _visitUnaryOp(_ctx.nested)  + ")";
+                case LTLParser.ALWAYS:
+                    return "[] (" + _visitUnaryOp(_ctx.nested) + ")";
+                case LTLParser.EVENTUALLY:
+                    return "<> (" + _visitUnaryOp(_ctx.nested) + ")";
+                default:
+                    throw new RuntimeException("Unexpected nested operand "+_ctx.nuop.getText());
+            }
+
+        }
+
         if (ctx instanceof LTLParser.NegationContext _ctx) {
             return visitNegation(_ctx);
         }

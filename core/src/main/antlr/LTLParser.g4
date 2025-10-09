@@ -28,6 +28,7 @@ binaryOp
 
 unaryOp
     : formula=primary # NoUnaryOp
+    | nuop=(NEGATION | ALWAYS | EVENTUALLY) nested=unaryOp # Nested
     | NEGATION formula=primary # Negation
     | NEXT formula=primary # Next
     | EVENTUALLY formula=primary # Eventually
