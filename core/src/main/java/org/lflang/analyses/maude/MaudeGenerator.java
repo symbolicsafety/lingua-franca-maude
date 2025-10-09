@@ -725,7 +725,7 @@ public class MaudeGenerator extends GeneratorBase {
 
                 builder.append(timeBound);
 
-                builder.append(" =>"+mode+" {C:Configuration} timeBound TI:TimeInf");
+                builder.append(" =>"+mode+" CS:ClockedSystem ");
                 LTLLexer lexer = new LTLLexer(CharStreams.fromString(goal));
                 CommonTokenStream tokens = new CommonTokenStream(lexer);
                 LTLParser parser = new LTLParser(tokens);
@@ -733,7 +733,7 @@ public class MaudeGenerator extends GeneratorBase {
                 LTLVisitor visitor = new LTLVisitor(this.maudeReactorInstances);
 
                 String genGoal = visitor.visitLtl(ltlCtx);
-                builder.append(" such that {C:Configuration} |= "+genGoal + " .");
+                builder.append(" such that CS:ClockedSystem |= "+genGoal + " .");
                 code.pr(builder.toString());
                 code.pr("");
             }
