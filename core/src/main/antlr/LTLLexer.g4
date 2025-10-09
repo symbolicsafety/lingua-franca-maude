@@ -142,6 +142,10 @@ INQUEUE
     : 'inQueue'
     ;
 
+REMAININGTIME
+    : 'remainingTime'
+    ;
+
 ID
     : ([a-zA-Z0-9]|'_')+
     ;
