@@ -223,7 +223,7 @@ public class CToMaudeVisitor extends CBaseAstVisitor<String> {
         Long delay = Long.parseLong(additionalDelay.replaceAll("\\[|\\]",""));
         String payload = visit(node.children.get(2));
 
-        return "schedule(" + mAction.getName() + ", " + delay + ", " + payload + ")";
+        return "schedule(" + mAction.getName() + ", [" + delay + "], " + payload + ")";
     }
 
     //TODO: Add visitScheduleActionTokenNode to handle booleans.
