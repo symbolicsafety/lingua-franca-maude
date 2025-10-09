@@ -44,7 +44,7 @@ atomicProp
     | lfname=ID IN reactor=ID bop=(EQ|NEQ) bval=(TRUE|FALSE)
     | reactor=ID DOT reaction=INTEGER INVOKED
     | event=EVENT LPAREN reactor=ID COMMA trigger=ID (COMMA val=(INTEGER|TRUE|FALSE))? RPAREN INQUEUE
-    | left=expr op=relOp right=expr
+    | left=sum op=relOp right=sum
     ;
 
 

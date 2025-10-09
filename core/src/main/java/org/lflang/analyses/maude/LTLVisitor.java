@@ -216,7 +216,7 @@ public class LTLVisitor extends LTLParserBaseVisitor<String> {
             else if (op.equals("!="))
                 op = "==/=";
 
-            return "(" + visitExpr(ctx.left) + ") " + op + " (" + visitExpr(ctx.right)
+            return "(" + visitSum(ctx.left) + ") " + op + " (" + visitSum(ctx.right)
                 + ")";
         }
     }
@@ -224,8 +224,11 @@ public class LTLVisitor extends LTLParserBaseVisitor<String> {
     public String visitExpr(LTLParser.ExprContext ctx) {
         if (ctx.lfname != null) {
             //TODO: Translate LF name to Maude name
+            MaudeReactorInstance reactor = getMaudeReactorByLFname(ctx.reactor.getText());
+            String maudeName = getMaudeobjByLFname(reactor, ctx.lfname.getText());
 
-            return ctx.lfname.getText();
+
+            return "( @ " + maudeName + " in " + reactor.getName() + ") ";
         }
         else if (ctx.INTEGER() != null) {
             return "@ [" + ctx.INTEGER().getText() + "]";
