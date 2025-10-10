@@ -198,7 +198,9 @@ public class CToMaudeVisitor extends CBaseAstVisitor<String> {
 
     @Override
     public String visitNegativeNode(NegativeNode node) {
-        throw new RuntimeException("Negative node not yet implemented in Maude");
+        if (node.child instanceof LiteralNode _clit)
+            return "[-" + _clit.literal + "]";
+        throw new RuntimeException("Negative node not yet implemented in Maude for anything other than literals.");
     }
 
     @Override
