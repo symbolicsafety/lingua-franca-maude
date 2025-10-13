@@ -21,7 +21,8 @@ public class LTLVisitor extends LTLParserBaseVisitor<String> {
     }
 
     public String visitLtl(LTLParser.LtlContext ctx) {
-        return visitEquivalence(ctx.equivalence());
+        //Add "global" parentheses around entire expression
+        return "(" + visitEquivalence(ctx.equivalence()) + ")";
     }
 
     public String visitEquivalence(LTLParser.EquivalenceContext ctx) {
@@ -38,32 +39,47 @@ public class LTLVisitor extends LTLParserBaseVisitor<String> {
         if (ctx.right == null) {
             return visitDisjunction(ctx.left);
         }
-        return visitDisjunction(ctx.left) + "->"
+        return visitDisjunction(ctx.left) + " -> "
             + visitDisjunction(ctx.right);
     }
 
     public String visitDisjunction(LTLParser.DisjunctionContext ctx) {
-        String str = "";
+        StringBuilder str = new StringBuilder();
         for (int i = 0; i < ctx.terms.size(); i++) {
-            str +=
-                "("
-                    + visitConjunction(ctx.terms.get(i))
-                    + ")"
-                    + (i == ctx.terms.size() - 1 ? "" : " \\/ ");
+            str.append(visitConjunction(ctx.terms.get(i))).append(
+                i == ctx.terms.size() - 1 ? "" : " \\/ ");
         }
-        return str;
+        return str.toString();
     }
 
     public String visitConjunction(LTLParser.ConjunctionContext ctx) {
-        String str = "";
+        StringBuilder str = new StringBuilder();
         for (int i = 0; i < ctx.terms.size(); i++) {
-            str +=
-                "("
-                    + visitUntil(
-                    (LTLParser.UntilContext) ctx.terms.get(i)) +
-                    ")" + (i == ctx.terms.size() - 1 ? "" : " /\\ ");
+            str.append(visitUntil(
+                (LTLParser.UntilContext) ctx.terms.get(i))).append(
+                i == ctx.terms.size() - 1 ? "" : " /\\ ");
         }
-        return str;
+        return str.toString();
+    }
+
+    //check if unary operator requires parens
+    //it does not require for nested unary ops, atomic props or primary ID
+    private boolean needsParens(LTLParser.UnaryOpContext ctx) {
+        if (ctx instanceof LTLParser.NestedContext) {
+            // neste unary op, no parens required
+            return false;
+        }
+
+        //no extra parens needed
+        if (ctx instanceof LTLParser.NoUnaryOpContext nupctx) {
+            if (nupctx.formula.atom != null) return false;  //atomicProp add their own parens when needed
+            if (nupctx.formula.id != null) return false;    //primary ID adds its own parens
+
+            return true;
+        }
+
+        //default keep parens
+        return true;
     }
 
     // A custom dispatch function
@@ -72,15 +88,20 @@ public class LTLVisitor extends LTLParserBaseVisitor<String> {
             return visitNoUnaryOp(_ctx);
         }
         if (ctx instanceof LTLParser.NestedContext _ctx) {
+            boolean keep = needsParens(_ctx);
             switch (_ctx.nuop.getType()) {
                 case LTLParser.NEGATION:
-                    return "~ (" + _visitUnaryOp(_ctx.nested)  + ")";
+                    return keep ? "~ (" + _visitUnaryOp(_ctx.nested) + ")"
+                                : "~ " + _visitUnaryOp(_ctx.nested);
                 case LTLParser.ALWAYS:
-                    return "[] (" + _visitUnaryOp(_ctx.nested) + ")";
+                    return keep ? "[] (" + _visitUnaryOp(_ctx.nested) + ")"
+                                : "[] " + _visitUnaryOp(_ctx.nested);
                 case LTLParser.EVENTUALLY:
-                    return "<> (" + _visitUnaryOp(_ctx.nested) + ")";
+                    return keep ? "<> (" + _visitUnaryOp(_ctx.nested) + ")"
+                                : "<> " + _visitUnaryOp(_ctx.nested);
                 case LTLParser.NEXT:
-                    return "O (" + _visitUnaryOp(_ctx.nested) + ")";
+                    return keep ? "O (" + _visitUnaryOp(_ctx.nested) + ")"
+                                : "O " + _visitUnaryOp(_ctx.nested);
 
                 default:
                     throw new RuntimeException("Unexpected nested operand "+_ctx.nuop.getText());
@@ -98,11 +119,10 @@ public class LTLVisitor extends LTLParserBaseVisitor<String> {
             return _visitUnaryOp(ctx.left);
         }
 
-        return "(" + _visitUnaryOp(ctx.left) + ") " + ctx.op.getText() + " (" + _visitUnaryOp(ctx.right) + ")";
+        return _visitUnaryOp(ctx.left) + " " + ctx.op.getText() + " " + _visitUnaryOp(ctx.right);
     }
 
     public String visitNoUnaryOp(LTLParser.NoUnaryOpContext ctx) {
-
         return visitPrimary(ctx.formula);
     }
 
@@ -113,8 +133,9 @@ public class LTLVisitor extends LTLParserBaseVisitor<String> {
         else if (ctx.id != null) {
             throw new RuntimeException("Unrecognized id "+ctx.id.getText());
         }
-        else return visitLtl(ctx.formula);
-
+        else
+            //go to equivalence instead of "global" ltl as we already have parens there
+            return "(" + visitEquivalence(ctx.formula.equivalence()) + ")";
     }
 
     public String visitAtomicProp(LTLParser.AtomicPropContext ctx) {
@@ -160,7 +181,7 @@ public class LTLVisitor extends LTLParserBaseVisitor<String> {
             MaudeReactorInstance reactor = getMaudeReactorByLFname(ctx.reactor.getText());
             if (reactor == null)
                 throw new RuntimeException("Could not find reactor "+ctx.reactor.getText() + " used for expr "+ctx.reactor.getText() + "." + ctx.reaction.getText() + " invoked");
-            return "((" + reactor.getName() + " . " + ctx.reaction.getText() + ") invoked )";
+            return "(" + reactor.getName() + " . " + ctx.reaction.getText() + ") invoked ";
         }
         else if (ctx.event != null) {
             if (ctx.reactor == null)
@@ -213,41 +234,38 @@ public class LTLVisitor extends LTLParserBaseVisitor<String> {
     }
 
     public String visitSum(LTLParser.SumContext ctx) {
-        String str = "";
+        StringBuilder str = new StringBuilder();
         for (int i = 0; i < ctx.terms.size(); i++) {
-            str += "(" + visitDifference(ctx.terms.get(i)) + ")" +
-                (i == ctx.terms.size() - 1 ? "" : "+");
+            str.append(visitDifference(ctx.terms.get(i))).append(
+                i == ctx.terms.size() - 1 ? "" : "+");
         }
-        return str;
+        return str.toString();
     }
 
     public String visitDifference(LTLParser.DifferenceContext ctx) {
-        String str = "";
+        StringBuilder str = new StringBuilder();
         for (int i = 0; i < ctx.terms.size(); i++) {
-            str +=
-                "(" + visitProduct(ctx.terms.get(i)) + ")" +
-                    (i == ctx.terms.size() - 1 ? "" : "-");
+            str.append(visitProduct(ctx.terms.get(i))).append(
+                i == ctx.terms.size() - 1 ? "" : "-");
         }
-        return str;
+        return str.toString();
     }
 
     public String visitProduct(LTLParser.ProductContext ctx) {
-        String str = "";
+        StringBuilder str = new StringBuilder();
         for (int i = 0; i < ctx.terms.size(); i++) {
-            str +=
-                "(" + visitQuotient(ctx.terms.get(i)) + ")" +
-                    (i == ctx.terms.size() - 1 ? "" : "*");
+            str.append(visitQuotient(ctx.terms.get(i))).append(
+                i == ctx.terms.size() - 1 ? "" : "*");
         }
-        return str;
+        return str.toString();
     }
     public String visitQuotient(LTLParser.QuotientContext ctx) {
-        String str = "";
+        StringBuilder str = new StringBuilder();
         for (int i = 0; i < ctx.terms.size(); i++) {
-            str +=
-                "(" + visitExpr(ctx.terms.get(i)) + ")" +
-                    (i == ctx.terms.size() - 1 ? "" : "/");
+            str.append(visitExpr(ctx.terms.get(i))).append(
+                i == ctx.terms.size() - 1 ? "" : "/");
         }
-        return str;
+        return str.toString();
     }
 
     private MaudeReactorInstance getMaudeReactorByLFname(String lfReactorName) {
