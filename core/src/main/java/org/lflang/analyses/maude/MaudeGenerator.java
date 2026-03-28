@@ -640,7 +640,7 @@ public class MaudeGenerator extends GeneratorBase {
         code.indent();
         code.pr("including TEST-" + this .main.getName().toUpperCase() + " .");
         code.pr("including LF-PROP-EXT .");
-        code.pr("including SEARCH-GOAL .");
+        code.pr("including LF-SEARCH-COMMAND .");
         code.unindent();
         code.pr("endom");
         code.pr("");
@@ -716,16 +716,13 @@ public class MaudeGenerator extends GeneratorBase {
                     throw new RuntimeException("Reachability analysis requires goal to be defined!");
 
                 StringBuilder builder = new StringBuilder();
-                builder.append("search [1");
-                if (!rewrites.isEmpty()) {
-                    builder.append("," + rewrites);
-                }
-                builder.append("] in ANALYSIS-"+this.main.getName().toUpperCase() + " : initSystem timeBound ");
+                builder.append("red in ANALYSIS-"+this.main.getName().toUpperCase() +
+                    " : search in 'ANALYSIS-"+this.main.getName().toUpperCase()+" : initSystem timeBound ");
                 // Decide what kind of analysis to do
 
                 builder.append(timeBound);
 
-                builder.append(" =>"+mode+" CS:ClockedSystem ");
+                builder.append(" =>"+mode+" ");
                 LTLLexer lexer = new LTLLexer(CharStreams.fromString(goal));
                 CommonTokenStream tokens = new CommonTokenStream(lexer);
                 LTLParser parser = new LTLParser(tokens);
@@ -733,7 +730,7 @@ public class MaudeGenerator extends GeneratorBase {
                 LTLVisitor visitor = new LTLVisitor(this.maudeReactorInstances);
 
                 String genGoal = visitor.visitLtl(ltlCtx);
-                builder.append(" such that CS:ClockedSystem |= "+genGoal + " .");
+                builder.append(genGoal + " .");
                 code.pr(builder.toString());
                 code.pr("");
             }
