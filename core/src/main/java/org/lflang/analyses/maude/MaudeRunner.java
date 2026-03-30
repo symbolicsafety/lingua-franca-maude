@@ -1,5 +1,6 @@
 package org.lflang.analyses.maude;
 
+import java.io.IOException;
 import java.nio.file.*;
 import java.nio.file.Path;
 import java.util.List;
@@ -62,6 +63,27 @@ public class MaudeRunner {
     public void run() {
         Path lf_maudeBase =getEnvironmentVariable("LF_MAUDE_BASE","lf-main-concrete.maude");
         Path maudeBase =getEnvironmentVariable("MAUDE_BASE","maude");
+        String maudeVerbose = generator.context.getArgs().maudeVerbose();
+        Path maudeVerboseFile = generator.context.getArgs().maudeVerboseFile();
+
+        if (maudeVerboseFile != null && maudeVerbose == null) {
+            reporter
+                .nowhere()
+                .warning(
+                    "Ignoring --maude-verbose-file because --maude-verbose was not provided.");
+            maudeVerboseFile = null;
+        }
+
+        if (maudeVerboseFile != null) {
+            try {
+                Path parent = maudeVerboseFile.getParent();
+                if (parent != null) {
+                    Files.createDirectories(parent);
+                }
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to create Maude verbose output directory.", e);
+            }
+        }
 
         for (Path path : generator.generatedFiles) {
             LFCommand command =
@@ -72,6 +94,12 @@ public class MaudeRunner {
                         path.toString()
                     ),
                     generator.outputDir);
+            if (command == null) {
+                continue;
+            }
+            if (maudeVerboseFile != null) {
+                command.redirectErrorsTo(maudeVerboseFile);
+            }
             command.run();
 
         }

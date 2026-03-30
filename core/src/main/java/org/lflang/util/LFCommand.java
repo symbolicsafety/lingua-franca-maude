@@ -238,6 +238,11 @@ public class LFCommand {
     quiet = false;
   }
 
+  /** Redirect stderr to the given file, replacing any previous contents. */
+  public void redirectErrorsTo(Path path) {
+    processBuilder.redirectError(path.toFile());
+  }
+
   /**
    * Create a LFCommand instance from a given command and argument list in the current working
    * directory.

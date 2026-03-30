@@ -663,6 +663,8 @@ public class MaudeGenerator extends GeneratorBase {
         code.pr("endom");
         code.pr("");
 
+        String maudeVerbose = context.getArgs().maudeVerbose();
+
         for (Attribute prop : this.maudeProperties) {
             String analysis = // so far this has fixed value "reachability"
                 StringUtil.removeQuotes(
@@ -731,7 +733,7 @@ public class MaudeGenerator extends GeneratorBase {
 
                 String genGoal = visitor.visitLtl(ltlCtx);
                 builder.append(genGoal + " .");
-                code.pr(builder.toString());
+                emitVerboseWrappedCommand(builder.toString(), analysis, maudeVerbose);
                 code.pr("");
             }
             else if (analysis.equalsIgnoreCase("ltl")) {
@@ -749,7 +751,7 @@ public class MaudeGenerator extends GeneratorBase {
 
                 String genGoal = visitor.visitLtl(ltlCtx);
                 builder.append(" , "+genGoal + " ) .");
-                code.pr(builder.toString());
+                emitVerboseWrappedCommand(builder.toString(), analysis, maudeVerbose);
                 code.pr("");
 
             }
@@ -766,6 +768,26 @@ public class MaudeGenerator extends GeneratorBase {
             }
 
         }
+    }
+
+    //wrap ltl and reachability commands with verbose on/off if maudeVerbose is set.
+    private void emitVerboseWrappedCommand(String command, String analysis, String maudeVerbose) {
+        if (maudeVerbose == null) {
+            code.pr(command);
+            return;
+        }
+        if (maudeVerbose.equalsIgnoreCase("all")) {
+            code.pr("set verbose on .");
+            code.pr(command);
+            return;
+        }
+        if (maudeVerbose.equalsIgnoreCase(analysis)) {
+            code.pr("set verbose on .");
+            code.pr(command);
+            code.pr("set verbose off .");
+            return;
+        }
+        code.pr(command);
     }
 
     ////////////////////////////////////////////////////////////

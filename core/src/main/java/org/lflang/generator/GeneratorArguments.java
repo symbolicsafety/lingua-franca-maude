@@ -2,6 +2,7 @@ package org.lflang.generator;
 
 import com.google.gson.JsonObject;
 import java.net.URI;
+import java.nio.file.Path;
 import java.util.List;
 
 /**
@@ -16,6 +17,9 @@ import java.util.List;
  * @param jsonObject Generator arguments and target properties in JSON format.
  * @param lint For enabling or disabling the linting of generated code.
  * @param quiet Whether to suppress output of the target compiler and other commands.
+ * @param maudeVerbose Selective Maude verbosity instrumentation to inject into generated Maude
+ *     analyses.
+ * @param maudeVerboseFile Optional file path to receive Maude stderr.
  * @param rti The location of the rti.
  * @param overrides List of arguments that are meant to override target properties
  * @author Marten Lohstroh
@@ -27,11 +31,13 @@ public record GeneratorArguments(
     JsonObject jsonObject,
     boolean lint,
     boolean quiet,
+    String maudeVerbose,
+    Path maudeVerboseFile,
     URI rti,
     List<Argument<?>> overrides) {
 
   /** Return a record with none of the arguments set. */
   public static GeneratorArguments none() {
-    return new GeneratorArguments(false, null, false, null, false, false, null, List.of());
+    return new GeneratorArguments(false, null, false, null, false, false, null, null, null, List.of());
   }
 }

@@ -108,6 +108,19 @@ public class Lfc extends CliBase {
   private Boolean noCompile;
 
   @Option(
+      names = "--maude-verbose",
+      arity = "0..1",
+      fallbackValue = "all",
+      description =
+          "Enable Maude verbosity in generated analyses. Accepted values: ${COMPLETION-CANDIDATES}.")
+  private MaudeVerbose maudeVerbose;
+
+  @Option(
+      names = "--maude-verbose-file",
+      description = "Redirect Maude stderr to the given file when invoking Maude. Used in conjunction with --maude-verbose, which writes verbose messages to stderr.")
+  private Path maudeVerboseFile;
+
+  @Option(
       names = {"--verify"},
       arity = "0",
       description = "Run the generated verification models.")
@@ -169,6 +182,12 @@ public class Lfc extends CliBase {
 
   @ArgGroup(exclusive = true, multiplicity = "0..1")
   ThreadingMutuallyExclusive threading;
+
+  private enum MaudeVerbose {
+    all,
+    ltl,
+    reachability
+  }
 
   /**
    * Main function of the stand-alone compiler. Caution: this will invoke System.exit.
@@ -375,6 +394,8 @@ public class Lfc extends CliBase {
         getJsonObject(),
         lint,
         quiet,
+        maudeVerbose == null ? null : maudeVerbose.name(),
+        maudeVerboseFile == null ? null : toAbsolutePath(maudeVerboseFile),
         getRtiUri(),
         List.of(
             new Argument<>(BuildTypeProperty.INSTANCE, getBuildType()),
