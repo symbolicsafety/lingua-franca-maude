@@ -9,6 +9,7 @@ import org.eclipse.jface.action.ActionContributionItem;
 import org.lflang.generator.ActionInstance;
 import org.lflang.generator.PortInstance;
 import org.lflang.generator.ReactionInstance;
+import org.lflang.generator.TriggerInstance;
 
 
 public class MaudeReactionInstance {
@@ -24,16 +25,25 @@ public class MaudeReactionInstance {
         this.parent = parent;
         this.name = parent.getName() + ".re." + lfReaction.getName().replaceAll("_","");
         for (var trigger : lfReaction.triggers)
-            this.triggers.add(parent.getMaudeTrigger(trigger));
+            this.triggers.add(resolveTrigger(trigger, "trigger"));
 
         for (var effect : lfReaction.effects) {
-            if (effect instanceof PortInstance)
-                this.effects.add(new MaudeTriggerInstance(effect, parent.getMaudePort((PortInstance) effect)));
-            else if (effect instanceof ActionInstance)
-                this.effects.add(new MaudeTriggerInstance(effect, parent.getMaudeAction((ActionInstance)effect)));
-            else
+            if (!(effect instanceof PortInstance) && !(effect instanceof ActionInstance))
                throw new RuntimeException("Maude only supports actions and ports as reaction effects.");
+
+            this.effects.add(resolveTrigger(effect, "effect"));
         }
+    }
+
+    private MaudeTriggerInstance resolveTrigger(
+        TriggerInstance<?> lfTrigger,
+        String role
+    ) {
+        var result = parent.getMaudeTrigger(lfTrigger);
+        if (result == null)
+            throw new IllegalStateException(
+                "Could not resolve Maude " + role + " for " + lfTrigger.getFullName());
+        return result;
     }
 
     public String getName() {

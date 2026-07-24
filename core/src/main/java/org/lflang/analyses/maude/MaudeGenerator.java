@@ -33,7 +33,6 @@ import org.lflang.generator.GeneratorBase;
 import org.lflang.generator.LFGeneratorContext;
 import org.lflang.generator.NamedInstance;
 import org.lflang.generator.PortInstance;
-import org.lflang.generator.ReactionInstance.Runtime;
 import org.lflang.generator.ReactorInstance;
 import org.lflang.generator.RuntimeRange;
 import org.lflang.generator.SendRange;
@@ -56,6 +55,7 @@ public class MaudeGenerator extends GeneratorBase {
     /** A runner for the generated Maude files */
     public MaudeRunner runner;
 
+    private final MaudeInstanceRegistry maudeInstances = new MaudeInstanceRegistry();
 
     public List<MaudeReactorInstance> maudeReactorInstances = new ArrayList<>();
     private List<MaudePortInstance> maudePortInstances = new ArrayList<>();
@@ -83,10 +83,6 @@ public class MaudeGenerator extends GeneratorBase {
         this.runner = new MaudeRunner(this);
     }
     //// Public fields
-    /** A list of reaction runtime instances. */
-    public List<Runtime> reactionInstances =
-        new ArrayList<Runtime>();
-
     /** A list of action instances */
     public List<ActionInstance> actionInstances = new ArrayList<ActionInstance>();
 
@@ -378,7 +374,7 @@ public class MaudeGenerator extends GeneratorBase {
         //generate connections
         for (var port : this.maudePortInstances) {
             for (SendRange range : port.getLfPort().getDependentPorts()) {
-                MaudePortInstance mSource = port.parent.getMaudePort(range.instance);
+                MaudePortInstance mSource = this.maudeInstances.requirePort(range.instance);
                 Connection connection = range.connection;
                 List<RuntimeRange<PortInstance>> destinations = range.destinations;
 
@@ -398,16 +394,8 @@ public class MaudeGenerator extends GeneratorBase {
 
                 for (var portRange : destinations) {
                     var destination = portRange.instance;
-                    MaudePortInstance mDestination = null;
-                    for (var reactor : this.maudeReactorInstances) {
-                        if (reactor.getMaudePort(destination) != null) {
-                            mDestination = reactor.getMaudePort(destination);
-                            break;
-                        }
-                    }
-                    if (mDestination == null)
-                        throw new RuntimeException("Could not find Maude port corresponding to"
-                            + " destination port " + destination.getName());
+                    MaudePortInstance mDestination =
+                        this.maudeInstances.requirePort(destination);
                     StringBuilder builder = new StringBuilder();
                     builder.append("(" + mSource.getParent().getName() + " : " + mSource.getName());
                     if (delay > 0) {
@@ -825,15 +813,10 @@ public class MaudeGenerator extends GeneratorBase {
         // Reactor and reaction instances
         this.reactorInstances.add(reactor);
 
-        MaudeReactorInstance maudeReactor = new MaudeReactorInstance(reactor);
+        MaudeReactorInstance maudeReactor =
+            new MaudeReactorInstance(reactor, this.maudeInstances);
         this.maudeReactorInstances.add(maudeReactor);
 
-
-        for (var reaction : reactor.reactions) {
-            this.reactionInstances.addAll(reaction.getRuntimeInstances());
-        }
-        // TODO: confirm that getRuntimeInstances() returns the same reaction instance if there
-        //  are no banks/nested reactors/reactions
         this.maudeReactionInstances.addAll(maudeReactor.reactions);
 
         this.stateVariables.addAll(reactor.states);

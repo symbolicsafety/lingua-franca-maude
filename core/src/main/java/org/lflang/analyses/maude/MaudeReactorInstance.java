@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.lflang.generator.ActionInstance;
+import org.lflang.generator.NamedInstance;
 import org.lflang.generator.PortInstance;
 import org.lflang.generator.ReactionInstance;
 import org.lflang.generator.ReactorInstance;
@@ -13,6 +14,7 @@ import org.lflang.generator.TriggerInstance;
 
 public class MaudeReactorInstance {
     public final ReactorInstance lfReactor;
+    private final MaudeInstanceRegistry registry;
     private String name;
     public final List<MaudeActionInstance> logicalActions = new ArrayList<MaudeActionInstance>();
     public final List<MaudeActionInstance> physicalActions = new ArrayList<MaudeActionInstance>();
@@ -32,138 +34,139 @@ public class MaudeReactorInstance {
 
     //TODO: '_' is a Maude special character, so we delete it in all names that we encounter
     // add code to check for name collisions and use an incrementing suffix to resolve
-    public MaudeReactorInstance(ReactorInstance lfReactor) {
+    public MaudeReactorInstance(
+        ReactorInstance lfReactor,
+        MaudeInstanceRegistry registry
+    ) {
         this.lfReactor = lfReactor;
+        this.registry = registry;
         this.name = lfReactor.getName().replaceAll("_","");
+        this.registry.register(lfReactor, this);
 
         for (var action: lfReactor.actions) {
             if (action.isPhysical()) {
                 var mAction = new MaudeActionInstance(action, this);
                 this.physicalActions.add(mAction);
-                this.triggers.add(new MaudeTriggerInstance(action, mAction));
+                this.registry.register(action, mAction);
+                this.triggers.add(registerTrigger(action, mAction));
             }
             else {
                 var mAction = new MaudeActionInstance(action, this);
                 this.logicalActions.add(mAction);
-                this.triggers.add(new MaudeTriggerInstance(action, mAction));
+                this.registry.register(action, mAction);
+                this.triggers.add(registerTrigger(action, mAction));
             }
         }
 
         for (var timer : lfReactor.timers) {
             var mTimer = new MaudeTimerInstance(timer, this);
             this.timers.add(mTimer);
-            this.triggers.add(new MaudeTriggerInstance(timer, mTimer));
+            this.registry.register(timer, mTimer);
+            this.triggers.add(registerTrigger(timer, mTimer));
         }
 
         for (var input : lfReactor.inputs) {
             var mInput = new MaudePortInstance(input, this);
             this.inPorts.add(mInput);
-            this.triggers.add(new MaudeTriggerInstance(input, mInput));
+            this.registry.register(input, mInput);
+            this.triggers.add(registerTrigger(input, mInput));
         }
 
-        //TODO: when adding support for nested reactors, add output ports of contained reactors
-        // to trigger list
         for (var output : lfReactor.outputs) {
             var mOutput = new MaudePortInstance(output, this);
             this.outPorts.add(mOutput);
+            this.registry.register(output, mOutput);
+            registerTrigger(output, mOutput);
         }
 
         for (var state : lfReactor.states) {
             var mState = new MaudeStateInstance(state, this);
             this.stateVars.add(mState);
+            this.registry.register(state, mState);
         }
 
         for (var trigger : lfReactor.getTriggers())
             if (trigger.isStartup()) {
                 this.startup = MaudeActionInstance.createStartupAction(this);
                 this.logicalActions.add(startup);
-                this.triggers.add(new MaudeTriggerInstance(trigger, startup));
+                this.triggers.add(registerTrigger(trigger, startup));
                 this.hasStartup = true;
             }
 
         for (var reaction: lfReactor.reactions) {
             var mReaction = new MaudeReactionInstance(reaction, this);
             this.reactions.add(mReaction);
+            this.registry.register(reaction, mReaction);
         }
     }
 
-    //TODO: replace linear scanning with hash table lookup for all the getMaude* methods
+    private MaudeTriggerInstance registerTrigger(
+        TriggerInstance<?> lfTrigger,
+        Object maudeTrigger
+    ) {
+        var result = new MaudeTriggerInstance(lfTrigger, maudeTrigger);
+        this.registry.register(lfTrigger, result);
+        return result;
+    }
+
+    private boolean isLocal(NamedInstance<?> lfInstance) {
+        return lfInstance != null && lfInstance.getParent() == this.lfReactor;
+    }
 
     //return maude physical action corresponding to lf physical action
     public MaudeActionInstance getMaudeAction(ActionInstance lfAction) {
-        if (lfAction.isPhysical())
-            return getMaudePhysicalAction(lfAction);
-        else
-            return getMaudeLogicalAction(lfAction);
+        if (!isLocal(lfAction))
+            return null;
+        return this.registry.get(lfAction);
     }
 
 
 
     //return maude logical action corresponding to lf logical action
     public MaudeActionInstance getMaudeLogicalAction(ActionInstance lfAction) {
-        for (var action : logicalActions)
-            if (action.getLfAction() == lfAction)
-                return action;
-
-        return null;
+        var action = getMaudeAction(lfAction);
+        return action != null && !lfAction.isPhysical() ? action : null;
     }
 
     //return maude physical action corresponding to lf physical action
     public MaudeActionInstance getMaudePhysicalAction(ActionInstance lfAction) {
-        for (var action : physicalActions)
-            if (action.getLfAction() == lfAction)
-                return action;
-
-        return null;
+        var action = getMaudeAction(lfAction);
+        return action != null && lfAction.isPhysical() ? action : null;
     }
 
     //return maude timer corresponding to lf timer
     public MaudeTimerInstance getMaudeTimer(TimerInstance lfTimer) {
-        for (var timer : timers)
-            if (timer.getLfTimer() == lfTimer)
-                return timer;
-
-        return null;
+        if (!isLocal(lfTimer))
+            return null;
+        return this.registry.get(lfTimer);
     }
 
     //return maude port corresponding to lf port
     public MaudePortInstance getMaudePort(PortInstance lfPort) {
-        for (var port : inPorts)
-            if (port.getLfPort() == lfPort)
-                return port;
-
-        for (var port : outPorts)
-            if (port.getLfPort() == lfPort)
-                return port;
-
-        return null;
+        if (!isLocal(lfPort))
+            return null;
+        return this.registry.get(lfPort);
     }
 
     //return maude state var corresponding to lf state var
     public MaudeStateInstance getMaudeStateVar(StateVariableInstance lfStateVar) {
-        for (var sv : stateVars)
-            if (sv.getLfStateVar() == lfStateVar)
-                return sv;
-
-        return null;
+        if (!isLocal(lfStateVar))
+            return null;
+        return this.registry.get(lfStateVar);
     }
 
     //return maude reaction corresponding to lf reaction
     public MaudeReactionInstance getMaudeReaction(ReactionInstance lfReaction) {
-        for (var reaction : reactions)
-            if (reaction.getLfReaction() == lfReaction)
-                return reaction;
-
-        return null;
+        if (!isLocal(lfReaction))
+            return null;
+        return this.registry.get(lfReaction);
     }
 
     //return maude trigger corresponding to lf trigger
-    public MaudeTriggerInstance getMaudeTrigger(TriggerInstance lfTrigger) {
-        for (var trigger : triggers)
-            if (trigger.getLfTrigger() == lfTrigger)
-                return trigger;
-
-        return null;
+    public MaudeTriggerInstance getMaudeTrigger(TriggerInstance<?> lfTrigger) {
+        if (!isLocal(lfTrigger))
+            return null;
+        return this.registry.get(lfTrigger);
     }
 
 
