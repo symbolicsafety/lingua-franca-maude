@@ -16,7 +16,7 @@ public class MaudeStateInstance {
     public MaudeStateInstance(StateVariableInstance lfStateVar, MaudeReactorInstance parent) {
         this.lfStateVar = lfStateVar;
         this.parent = parent;
-        this.name = parent.getName() + ".sv." + lfStateVar.getName().replaceAll("_","");
+        this.name = MaudeIdentifiers.state(parent, lfStateVar);
 
         if (lfStateVar.getDefinition().getType().getId() == null) {
             this.type = MaudeTypes.MaudeVarType.RVarId;

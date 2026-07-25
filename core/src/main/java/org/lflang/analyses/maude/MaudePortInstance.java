@@ -13,13 +13,7 @@ public class MaudePortInstance {
     public MaudePortInstance(PortInstance lfPort, MaudeReactorInstance parent) {
         this.lfPort = lfPort;
         this.parent = parent;
-
-        if (this.lfPort.isInput())
-            this.name = parent.getName() + ".in." + lfPort.getName().replaceAll("_","");
-        else if (this.lfPort.isOutput())
-            this.name = parent.getName() + ".out." + lfPort.getName().replaceAll("_","");
-        else
-            throw new RuntimeException("Lf port " + lfPort.getName() + " is neither input nor output");
+        this.name = MaudeIdentifiers.port(parent, lfPort);
 
         if (lfPort.getDefinition().getType().getId() == null) {
             this.type = MaudeTypes.MaudePortType.RPortId;

@@ -15,7 +15,7 @@ public class MaudeTimerInstance {
         this.lfTimer = lfTimer;
         this.parent = parent;
 
-        this.name = parent.getName() + ".t." + lfTimer.getName().replaceAll("_", "");
+        this.name = MaudeIdentifiers.timer(parent, lfTimer);
 
         // TODO: Add explicit time units to Maude
         // Our Maude implementation does not use time units.

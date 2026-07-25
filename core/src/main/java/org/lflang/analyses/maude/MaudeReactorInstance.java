@@ -32,15 +32,13 @@ public class MaudeReactorInstance {
 
     private MaudeActionInstance startup;
 
-    //TODO: '_' is a Maude special character, so we delete it in all names that we encounter
-    // add code to check for name collisions and use an incrementing suffix to resolve
     public MaudeReactorInstance(
         ReactorInstance lfReactor,
         MaudeInstanceRegistry registry
     ) {
         this.lfReactor = lfReactor;
         this.registry = registry;
-        this.name = lfReactor.getName().replaceAll("_","");
+        this.name = MaudeIdentifiers.reactor(lfReactor);
         this.registry.register(lfReactor, this);
 
         for (var action: lfReactor.actions) {

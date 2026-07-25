@@ -16,10 +16,7 @@ public class MaudeActionInstance {
     public MaudeActionInstance(ActionInstance lfAction, MaudeReactorInstance parent) {
         this.lfAction = lfAction;
         this.parent = parent;
-        if (lfAction.isPhysical())
-            this.name = parent.getName() + ".pa." + lfAction.getName().replaceAll("_","");
-        else
-            this.name = parent.getName() + ".la." + lfAction.getName().replaceAll("_","");
+        this.name = MaudeIdentifiers.action(parent, lfAction);
 
         this.minDelay = lfAction.getMinDelay().toNanoSeconds();
         if (lfAction.getMinSpacing() != null)
@@ -54,7 +51,7 @@ public class MaudeActionInstance {
     private MaudeActionInstance(MaudeReactorInstance parent) {
         this.lfAction = null;
         this.parent = parent;
-        this.name = "startup";
+        this.name = MaudeIdentifiers.startup();
         this.minDelay = 0;
         this.minSpacing = 0;
         this.policy = "defer";

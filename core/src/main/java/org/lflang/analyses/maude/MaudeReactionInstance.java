@@ -23,7 +23,7 @@ public class MaudeReactionInstance {
     public MaudeReactionInstance(ReactionInstance lfReaction, MaudeReactorInstance parent) {
         this.lfReaction = lfReaction;
         this.parent = parent;
-        this.name = parent.getName() + ".re." + lfReaction.getName().replaceAll("_","");
+        this.name = MaudeIdentifiers.reaction(parent, lfReaction);
         for (var trigger : lfReaction.triggers)
             this.triggers.add(resolveTrigger(trigger, "trigger"));
 
