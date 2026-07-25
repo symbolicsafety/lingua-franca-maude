@@ -40,14 +40,17 @@ primary
 atomicProp
     : primitive=TRUE
     | primitive=FALSE
-    | lfname=ID IN reactor=ID op=relOp val=INTEGER
-    | lfname=ID IN reactor=ID bop=(EQ|NEQ) bval=(TRUE|FALSE)
-    | reactor=ID DOT reaction=INTEGER INVOKED
-    | event=EVENT LPAREN reactor=ID COMMA trigger=ID (COMMA val=(INTEGER|TRUE|FALSE))? RPAREN INQUEUE
+    | lfname=ID IN reactor=qualifiedName op=relOp val=INTEGER
+    | lfname=ID IN reactor=qualifiedName bop=(EQ|NEQ) bval=(TRUE|FALSE)
+    | reactor=qualifiedName DOT reaction=INTEGER INVOKED
+    | event=EVENT LPAREN reactor=qualifiedName COMMA trigger=ID (COMMA val=(INTEGER|TRUE|FALSE))? RPAREN INQUEUE
     | rtime=REMAININGTIME rval=INTEGER
     | left=sum op=relOp right=sum
     ;
 
+qualifiedName
+    : ID (DOT ID)*
+    ;
 
 time
     : value=INTEGER (unit=ID)?
@@ -74,7 +77,7 @@ relOp
     ;
 
 expr
-    : lfname=ID IN reactor=ID
+    : lfname=ID IN reactor=qualifiedName
     | LPAREN sum RPAREN
     | INTEGER
     ;

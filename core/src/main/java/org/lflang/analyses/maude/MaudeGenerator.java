@@ -717,7 +717,7 @@ public class MaudeGenerator extends GeneratorBase {
                 CommonTokenStream tokens = new CommonTokenStream(lexer);
                 LTLParser parser = new LTLParser(tokens);
                 LtlContext ltlCtx = parser.ltl();
-                LTLVisitor visitor = new LTLVisitor(this.maudeReactorInstances);
+                LTLVisitor visitor = new LTLVisitor(this.maudeInstances);
 
                 String genGoal = visitor.visitLtl(ltlCtx);
                 builder.append(genGoal + " .");
@@ -735,7 +735,7 @@ public class MaudeGenerator extends GeneratorBase {
                 CommonTokenStream tokens = new CommonTokenStream(lexer);
                 LTLParser parser = new LTLParser(tokens);
                 LtlContext ltlCtx = parser.ltl();
-                LTLVisitor visitor = new LTLVisitor(this.maudeReactorInstances);
+                LTLVisitor visitor = new LTLVisitor(this.maudeInstances);
 
                 String genGoal = visitor.visitLtl(ltlCtx);
                 builder.append(" , "+genGoal + " ) .");

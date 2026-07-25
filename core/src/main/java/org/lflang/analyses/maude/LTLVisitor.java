@@ -1,23 +1,17 @@
 package org.lflang.analyses.maude;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.lflang.dsl.LTLParser;
-import org.lflang.dsl.LTLParser.NestedContext;
 import org.lflang.dsl.LTLParserBaseVisitor;
 import org.lflang.generator.CodeBuilder;
-import org.lflang.generator.NamedInstance;
 
 public class LTLVisitor extends LTLParserBaseVisitor<String> {
 
-    private List<NamedInstance> instances = new ArrayList<NamedInstance>();
-    public List<MaudeReactorInstance> reactors = new ArrayList<>();
+    private final MaudeInstanceRegistry registry;
 
     protected CodeBuilder code = new CodeBuilder();
 
-    public LTLVisitor(List<MaudeReactorInstance> reactors) {
-        this.reactors.addAll(reactors);
+    public LTLVisitor(MaudeInstanceRegistry registry) {
+        this.registry = registry;
     }
 
     public String visitLtl(LTLParser.LtlContext ctx) {
@@ -149,9 +143,7 @@ public class LTLVisitor extends LTLParserBaseVisitor<String> {
         else if (ctx.lfname  != null) {
             if (ctx.reactor == null)
                 throw new RuntimeException("Reactor not defined for "+ctx.lfname.getText() +" IN");
-            MaudeReactorInstance reactor = getMaudeReactorByLFname(ctx.reactor.getText());
-            if (reactor == null)
-                throw new RuntimeException("Could not find reactor "+ctx.reactor.getText() + " used for expr "+ctx.lfname.getText() + " IN " + ctx.reactor.getText());
+            MaudeReactorInstance reactor = registry.resolveReactor(ctx.reactor.getText());
 
             String maudeName = getMaudeobjByLFname(reactor, ctx.lfname.getText());
             if (maudeName == null)
@@ -178,17 +170,13 @@ public class LTLVisitor extends LTLParserBaseVisitor<String> {
             }
         }
         else if (ctx.reaction != null) {
-            MaudeReactorInstance reactor = getMaudeReactorByLFname(ctx.reactor.getText());
-            if (reactor == null)
-                throw new RuntimeException("Could not find reactor "+ctx.reactor.getText() + " used for expr "+ctx.reactor.getText() + "." + ctx.reaction.getText() + " invoked");
+            MaudeReactorInstance reactor = registry.resolveReactor(ctx.reactor.getText());
             return "(" + reactor.getName() + " . " + ctx.reaction.getText() + ") invoked ";
         }
         else if (ctx.event != null) {
             if (ctx.reactor == null)
                 throw new RuntimeException("Reactor not defined for event "+ctx.reactor.getText());
-            MaudeReactorInstance reactor = getMaudeReactorByLFname(ctx.reactor.getText());
-            if (reactor == null)
-                throw new RuntimeException("Could not find reactor "+ctx.reactor.getText() + " used for expr "+ctx.event.getText() + "(" + ctx.reactor.getText() + ")");
+            MaudeReactorInstance reactor = registry.resolveReactor(ctx.reactor.getText());
 
             String maudeName = getMaudeobjByLFname(reactor, ctx.trigger.getText());
             if (maudeName == null)
@@ -220,7 +208,7 @@ public class LTLVisitor extends LTLParserBaseVisitor<String> {
     public String visitExpr(LTLParser.ExprContext ctx) {
         if (ctx.lfname != null) {
             //TODO: Translate LF name to Maude name
-            MaudeReactorInstance reactor = getMaudeReactorByLFname(ctx.reactor.getText());
+            MaudeReactorInstance reactor = registry.resolveReactor(ctx.reactor.getText());
             String maudeName = getMaudeobjByLFname(reactor, ctx.lfname.getText());
 
 
@@ -266,15 +254,6 @@ public class LTLVisitor extends LTLParserBaseVisitor<String> {
                 i == ctx.terms.size() - 1 ? "" : "/");
         }
         return str.toString();
-    }
-
-    private MaudeReactorInstance getMaudeReactorByLFname(String lfReactorName) {
-        for (MaudeReactorInstance r : this.reactors) {
-            String reactorName = r.lfReactor.getName();
-            if (r.lfReactor.getName().equals(lfReactorName))
-                return r;
-        }
-        return null;
     }
 
     private String getMaudeobjByLFname(MaudeReactorInstance reactor, String lfName) {
