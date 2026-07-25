@@ -19,6 +19,8 @@ import org.lflang.generator.TriggerInstance;
 final class MaudeInstanceRegistry {
 
   private final Map<ReactorInstance, MaudeReactorInstance> reactors = new IdentityHashMap<>();
+  private final HierarchyNameIndex<MaudeReactorInstance> reactorsByLfName =
+      new HierarchyNameIndex<>("LF reactor");
   private final Map<ActionInstance, MaudeActionInstance> actions = new IdentityHashMap<>();
   private final Map<PortInstance, MaudePortInstance> ports = new IdentityHashMap<>();
   private final Map<TimerInstance, MaudeTimerInstance> timers = new IdentityHashMap<>();
@@ -28,6 +30,7 @@ final class MaudeInstanceRegistry {
 
   void register(ReactorInstance lfInstance, MaudeReactorInstance maudeInstance) {
     register(reactors, lfInstance, maudeInstance);
+    reactorsByLfName.register(lfInstance.getFullName(), lfInstance.getName(), maudeInstance);
   }
 
   void register(ActionInstance lfInstance, MaudeActionInstance maudeInstance) {
@@ -56,6 +59,10 @@ final class MaudeInstanceRegistry {
 
   MaudeReactorInstance get(ReactorInstance lfInstance) {
     return reactors.get(lfInstance);
+  }
+
+  MaudeReactorInstance resolveReactor(String lfReference) {
+    return reactorsByLfName.resolve(lfReference);
   }
 
   MaudeActionInstance get(ActionInstance lfInstance) {
