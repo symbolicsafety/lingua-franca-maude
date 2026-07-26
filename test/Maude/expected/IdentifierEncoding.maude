@@ -1,0 +1,206 @@
+---(****************************
+ * Auto-generated Maude model *
+ ******************************)---
+omod IDENTIFIERENCODING is
+    including LF-REPR .
+    protecting LF-VALUE-TIME .
+
+    op IdentifierEncoding : -> ReactorId [ctor] .
+    op IdentifierEncoding.workerZuone : -> ReactorId [ctor] .
+    op IdentifierEncoding.workerone : -> ReactorId [ctor] .
+    op IdentifierEncoding.workerZZuone : -> ReactorId [ctor] .
+    op IdentifierEncoding.mZusv : -> ReactorId [ctor] .
+    op IdentifierEncoding.workerZuone.m-sv.aZub : -> RVarId [ctor] .
+    op IdentifierEncoding.workerZuone.m-sv.ab : -> RVarId [ctor] .
+    op IdentifierEncoding.workerZuone.m-sv.aZZub : -> RVarId [ctor] .
+    op IdentifierEncoding.workerZuone.m-sv.mZusv : -> RVarId [ctor] .
+    op IdentifierEncoding.workerone.m-sv.aZub : -> RVarId [ctor] .
+    op IdentifierEncoding.workerone.m-sv.ab : -> RVarId [ctor] .
+    op IdentifierEncoding.workerone.m-sv.aZZub : -> RVarId [ctor] .
+    op IdentifierEncoding.workerone.m-sv.mZusv : -> RVarId [ctor] .
+    op IdentifierEncoding.workerZZuone.m-sv.aZub : -> RVarId [ctor] .
+    op IdentifierEncoding.workerZZuone.m-sv.ab : -> RVarId [ctor] .
+    op IdentifierEncoding.workerZZuone.m-sv.aZZub : -> RVarId [ctor] .
+    op IdentifierEncoding.workerZZuone.m-sv.mZusv : -> RVarId [ctor] .
+    op IdentifierEncoding.mZusv.m-sv.aZub : -> RVarId [ctor] .
+    op IdentifierEncoding.mZusv.m-sv.ab : -> RVarId [ctor] .
+    op IdentifierEncoding.mZusv.m-sv.aZZub : -> RVarId [ctor] .
+    op IdentifierEncoding.mZusv.m-sv.mZusv : -> RVarId [ctor] .
+    op IdentifierEncoding.workerZuone.m-la.actionZuone : -> RActionId [ctor] .
+    op IdentifierEncoding.workerZuone.m-la.actionone : -> RActionId [ctor] .
+    op startup : -> RActionId [ctor] .
+    op IdentifierEncoding.workerone.m-la.actionZuone : -> RActionId [ctor] .
+    op IdentifierEncoding.workerone.m-la.actionone : -> RActionId [ctor] .
+    op startup : -> RActionId [ctor] .
+    op IdentifierEncoding.workerZZuone.m-la.actionZuone : -> RActionId [ctor] .
+    op IdentifierEncoding.workerZZuone.m-la.actionone : -> RActionId [ctor] .
+    op startup : -> RActionId [ctor] .
+    op IdentifierEncoding.mZusv.m-la.actionZuone : -> RActionId [ctor] .
+    op IdentifierEncoding.mZusv.m-la.actionone : -> RActionId [ctor] .
+    op startup : -> RActionId [ctor] .
+    op init : -> Configuration .
+
+    eq init =
+        < IdentifierEncoding.workerZuone : Reactor |
+            inports : none,
+            outports : none,
+            state :
+                ( IdentifierEncoding.workerZuone.m-sv.aZub |-> [1] );
+                ( IdentifierEncoding.workerZuone.m-sv.ab |-> [2] );
+                ( IdentifierEncoding.workerZuone.m-sv.aZZub |-> [3] );
+                ( IdentifierEncoding.workerZuone.m-sv.mZusv |-> [4] ),
+            timers : none,
+            actions :
+                < IdentifierEncoding.workerZuone.m-la.actionZuone : LogicalAction | minDelay : 0, minSpacing : 0, policy : defer, payload : [0] >
+                < IdentifierEncoding.workerZuone.m-la.actionone : LogicalAction | minDelay : 0, minSpacing : 0, policy : defer, payload : [0] >
+                < startup : LogicalAction | minDelay : 0, minSpacing : 0, policy : defer, payload : [0] >,
+            reactions :
+                (reaction when (startup) --> (IdentifierEncoding.workerZuone.m-la.actionZuone ; IdentifierEncoding.workerZuone.m-la.actionone) do {
+                    (IdentifierEncoding.workerZuone.m-sv.aZub := (IdentifierEncoding.workerZuone.m-sv.aZub + [1])) ;
+                    (IdentifierEncoding.workerZuone.m-sv.ab := (IdentifierEncoding.workerZuone.m-sv.ab + [1])) ;
+                    (IdentifierEncoding.workerZuone.m-sv.aZZub := (IdentifierEncoding.workerZuone.m-sv.aZZub + [1])) ;
+                    (IdentifierEncoding.workerZuone.m-sv.mZusv := (IdentifierEncoding.workerZuone.m-sv.mZusv + [1])) ;
+                    schedule(IdentifierEncoding.workerZuone.m-la.actionZuone, [0], [0]) ;
+                    schedule(IdentifierEncoding.workerZuone.m-la.actionone, [0], [0])
+                })
+                (reaction when (IdentifierEncoding.workerZuone.m-la.actionZuone) do {
+                    (IdentifierEncoding.workerZuone.m-sv.aZub := (IdentifierEncoding.workerZuone.m-sv.aZub + [1]))
+                })
+                (reaction when (IdentifierEncoding.workerZuone.m-la.actionone) do {
+                    (IdentifierEncoding.workerZuone.m-sv.ab := (IdentifierEncoding.workerZuone.m-sv.ab + [1]))
+                })
+        >
+        < IdentifierEncoding.workerone : Reactor |
+            inports : none,
+            outports : none,
+            state :
+                ( IdentifierEncoding.workerone.m-sv.aZub |-> [1] );
+                ( IdentifierEncoding.workerone.m-sv.ab |-> [2] );
+                ( IdentifierEncoding.workerone.m-sv.aZZub |-> [3] );
+                ( IdentifierEncoding.workerone.m-sv.mZusv |-> [4] ),
+            timers : none,
+            actions :
+                < IdentifierEncoding.workerone.m-la.actionZuone : LogicalAction | minDelay : 0, minSpacing : 0, policy : defer, payload : [0] >
+                < IdentifierEncoding.workerone.m-la.actionone : LogicalAction | minDelay : 0, minSpacing : 0, policy : defer, payload : [0] >
+                < startup : LogicalAction | minDelay : 0, minSpacing : 0, policy : defer, payload : [0] >,
+            reactions :
+                (reaction when (startup) --> (IdentifierEncoding.workerone.m-la.actionZuone ; IdentifierEncoding.workerone.m-la.actionone) do {
+                    (IdentifierEncoding.workerone.m-sv.aZub := (IdentifierEncoding.workerone.m-sv.aZub + [1])) ;
+                    (IdentifierEncoding.workerone.m-sv.ab := (IdentifierEncoding.workerone.m-sv.ab + [1])) ;
+                    (IdentifierEncoding.workerone.m-sv.aZZub := (IdentifierEncoding.workerone.m-sv.aZZub + [1])) ;
+                    (IdentifierEncoding.workerone.m-sv.mZusv := (IdentifierEncoding.workerone.m-sv.mZusv + [1])) ;
+                    schedule(IdentifierEncoding.workerone.m-la.actionZuone, [0], [0]) ;
+                    schedule(IdentifierEncoding.workerone.m-la.actionone, [0], [0])
+                })
+                (reaction when (IdentifierEncoding.workerone.m-la.actionZuone) do {
+                    (IdentifierEncoding.workerone.m-sv.aZub := (IdentifierEncoding.workerone.m-sv.aZub + [1]))
+                })
+                (reaction when (IdentifierEncoding.workerone.m-la.actionone) do {
+                    (IdentifierEncoding.workerone.m-sv.ab := (IdentifierEncoding.workerone.m-sv.ab + [1]))
+                })
+        >
+        < IdentifierEncoding.workerZZuone : Reactor |
+            inports : none,
+            outports : none,
+            state :
+                ( IdentifierEncoding.workerZZuone.m-sv.aZub |-> [1] );
+                ( IdentifierEncoding.workerZZuone.m-sv.ab |-> [2] );
+                ( IdentifierEncoding.workerZZuone.m-sv.aZZub |-> [3] );
+                ( IdentifierEncoding.workerZZuone.m-sv.mZusv |-> [4] ),
+            timers : none,
+            actions :
+                < IdentifierEncoding.workerZZuone.m-la.actionZuone : LogicalAction | minDelay : 0, minSpacing : 0, policy : defer, payload : [0] >
+                < IdentifierEncoding.workerZZuone.m-la.actionone : LogicalAction | minDelay : 0, minSpacing : 0, policy : defer, payload : [0] >
+                < startup : LogicalAction | minDelay : 0, minSpacing : 0, policy : defer, payload : [0] >,
+            reactions :
+                (reaction when (startup) --> (IdentifierEncoding.workerZZuone.m-la.actionZuone ; IdentifierEncoding.workerZZuone.m-la.actionone) do {
+                    (IdentifierEncoding.workerZZuone.m-sv.aZub := (IdentifierEncoding.workerZZuone.m-sv.aZub + [1])) ;
+                    (IdentifierEncoding.workerZZuone.m-sv.ab := (IdentifierEncoding.workerZZuone.m-sv.ab + [1])) ;
+                    (IdentifierEncoding.workerZZuone.m-sv.aZZub := (IdentifierEncoding.workerZZuone.m-sv.aZZub + [1])) ;
+                    (IdentifierEncoding.workerZZuone.m-sv.mZusv := (IdentifierEncoding.workerZZuone.m-sv.mZusv + [1])) ;
+                    schedule(IdentifierEncoding.workerZZuone.m-la.actionZuone, [0], [0]) ;
+                    schedule(IdentifierEncoding.workerZZuone.m-la.actionone, [0], [0])
+                })
+                (reaction when (IdentifierEncoding.workerZZuone.m-la.actionZuone) do {
+                    (IdentifierEncoding.workerZZuone.m-sv.aZub := (IdentifierEncoding.workerZZuone.m-sv.aZub + [1]))
+                })
+                (reaction when (IdentifierEncoding.workerZZuone.m-la.actionone) do {
+                    (IdentifierEncoding.workerZZuone.m-sv.ab := (IdentifierEncoding.workerZZuone.m-sv.ab + [1]))
+                })
+        >
+        < IdentifierEncoding.mZusv : Reactor |
+            inports : none,
+            outports : none,
+            state :
+                ( IdentifierEncoding.mZusv.m-sv.aZub |-> [1] );
+                ( IdentifierEncoding.mZusv.m-sv.ab |-> [2] );
+                ( IdentifierEncoding.mZusv.m-sv.aZZub |-> [3] );
+                ( IdentifierEncoding.mZusv.m-sv.mZusv |-> [4] ),
+            timers : none,
+            actions :
+                < IdentifierEncoding.mZusv.m-la.actionZuone : LogicalAction | minDelay : 0, minSpacing : 0, policy : defer, payload : [0] >
+                < IdentifierEncoding.mZusv.m-la.actionone : LogicalAction | minDelay : 0, minSpacing : 0, policy : defer, payload : [0] >
+                < startup : LogicalAction | minDelay : 0, minSpacing : 0, policy : defer, payload : [0] >,
+            reactions :
+                (reaction when (startup) --> (IdentifierEncoding.mZusv.m-la.actionZuone ; IdentifierEncoding.mZusv.m-la.actionone) do {
+                    (IdentifierEncoding.mZusv.m-sv.aZub := (IdentifierEncoding.mZusv.m-sv.aZub + [1])) ;
+                    (IdentifierEncoding.mZusv.m-sv.ab := (IdentifierEncoding.mZusv.m-sv.ab + [1])) ;
+                    (IdentifierEncoding.mZusv.m-sv.aZZub := (IdentifierEncoding.mZusv.m-sv.aZZub + [1])) ;
+                    (IdentifierEncoding.mZusv.m-sv.mZusv := (IdentifierEncoding.mZusv.m-sv.mZusv + [1])) ;
+                    schedule(IdentifierEncoding.mZusv.m-la.actionZuone, [0], [0]) ;
+                    schedule(IdentifierEncoding.mZusv.m-la.actionone, [0], [0])
+                })
+                (reaction when (IdentifierEncoding.mZusv.m-la.actionZuone) do {
+                    (IdentifierEncoding.mZusv.m-sv.aZub := (IdentifierEncoding.mZusv.m-sv.aZub + [1]))
+                })
+                (reaction when (IdentifierEncoding.mZusv.m-la.actionone) do {
+                    (IdentifierEncoding.mZusv.m-sv.ab := (IdentifierEncoding.mZusv.m-sv.ab + [1]))
+                })
+        >
+    .
+endom
+
+omod TEST-IDENTIFIERENCODING is
+    including IDENTIFIERENCODING .
+    including DYNAMICS-WITHOUT-TICK .
+
+    ops env queue rxns : -> Oid [ctor] .
+
+    op initSystem : -> GlobalSystem .
+    eq initSystem =
+        { < env : Environment |
+            physicalActions : none
+             >
+            addReactionIndices(init)
+            < queue : EventQueue | queue :
+            addStartup(startup, init, empty) >
+            < rxns : Invoked | reactions : none >} .
+endom
+
+omod ANALYSIS-IDENTIFIERENCODING is
+    including TEST-IDENTIFIERENCODING .
+    including LF-PROP-EXT .
+    including LF-SEARCH-COMMAND .
+endom
+
+omod MODELCHECKER-IDENTIFIERENCODING is
+    including TEST-IDENTIFIERENCODING .
+    including LF-OUTPUT-COUNTEREXAMPLE .
+    including LF-PROP-EXT .
+    including MODEL-CHECKER .
+endom
+
+omod SIMULATION-IDENTIFIERENCODING is
+    including TEST-IDENTIFIERENCODING .
+    including TIMED-SIMULATION-DYNAMICS .
+endom
+
+red in MODELCHECKER-IDENTIFIERENCODING : modelCheck(initSystem timeBound INF , ([] (( (@ IdentifierEncoding.workerZuone.m-sv.aZub in IdentifierEncoding.workerZuone) >= @ [0] ))) ) .
+
+red in MODELCHECKER-IDENTIFIERENCODING : modelCheck(initSystem timeBound INF , ([] (( (@ IdentifierEncoding.workerone.m-sv.ab in IdentifierEncoding.workerone) >= @ [0] ))) ) .
+
+red in MODELCHECKER-IDENTIFIERENCODING : modelCheck(initSystem timeBound INF , ([] (( (@ IdentifierEncoding.workerZZuone.m-sv.aZZub in IdentifierEncoding.workerZZuone) >= @ [0] ))) ) .
+
+red in MODELCHECKER-IDENTIFIERENCODING : modelCheck(initSystem timeBound INF , ([] (( (@ IdentifierEncoding.mZusv.m-sv.mZusv in IdentifierEncoding.mZusv) >= @ [0] ))) ) .
+
+quit

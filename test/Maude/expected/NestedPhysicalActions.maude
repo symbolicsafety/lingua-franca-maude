@@ -1,0 +1,106 @@
+---(****************************
+ * Auto-generated Maude model *
+ ******************************)---
+omod NESTEDPHYSICALACTIONS is
+    including LF-REPR .
+    protecting LF-VALUE-TIME .
+
+    op NestedPhysicalActions : -> ReactorId [ctor] .
+    op NestedPhysicalActions.left : -> ReactorId [ctor] .
+    op NestedPhysicalActions.left.sensor : -> ReactorId [ctor] .
+    op NestedPhysicalActions.right : -> ReactorId [ctor] .
+    op NestedPhysicalActions.right.sensor : -> ReactorId [ctor] .
+    op NestedPhysicalActions.left.sensor.m-sv.last : -> RVarId [ctor] .
+    op NestedPhysicalActions.right.sensor.m-sv.last : -> RVarId [ctor] .
+    op NestedPhysicalActions.left.sensor.m-pa.sample : -> RActionId [ctor] .
+    op NestedPhysicalActions.right.sensor.m-pa.sample : -> RActionId [ctor] .
+    op init : -> Configuration .
+
+    eq init =
+        < NestedPhysicalActions.left : Reactor |
+            inports : none,
+            outports : none,
+            state : empty,
+            timers : none,
+            actions : none,
+            reactions : nil
+        >
+        < NestedPhysicalActions.left.sensor : Reactor |
+            inports : none,
+            outports : none,
+            state :
+                ( NestedPhysicalActions.left.sensor.m-sv.last |-> [0] ),
+            timers : none,
+            actions :
+                < NestedPhysicalActions.left.sensor.m-pa.sample : PhysicalAction | minDelay : 0, minSpacing : 0, policy : defer, payload : [0] >,
+            reactions :
+                (reaction when (NestedPhysicalActions.left.sensor.m-pa.sample) do {
+                    (NestedPhysicalActions.left.sensor.m-sv.last := NestedPhysicalActions.left.sensor.m-pa.sample)
+                })
+        >
+        < NestedPhysicalActions.right : Reactor |
+            inports : none,
+            outports : none,
+            state : empty,
+            timers : none,
+            actions : none,
+            reactions : nil
+        >
+        < NestedPhysicalActions.right.sensor : Reactor |
+            inports : none,
+            outports : none,
+            state :
+                ( NestedPhysicalActions.right.sensor.m-sv.last |-> [0] ),
+            timers : none,
+            actions :
+                < NestedPhysicalActions.right.sensor.m-pa.sample : PhysicalAction | minDelay : 0, minSpacing : 0, policy : defer, payload : [0] >,
+            reactions :
+                (reaction when (NestedPhysicalActions.right.sensor.m-pa.sample) do {
+                    (NestedPhysicalActions.right.sensor.m-sv.last := NestedPhysicalActions.right.sensor.m-pa.sample)
+                })
+        >
+    .
+endom
+
+omod TEST-NESTEDPHYSICALACTIONS is
+    including NESTEDPHYSICALACTIONS .
+    including DYNAMICS-WITHOUT-TICK .
+
+    ops env queue rxns : -> Oid [ctor] .
+
+    op initSystem : -> GlobalSystem .
+    eq initSystem =
+        { < env : Environment |
+            physicalActions :
+                < (NestedPhysicalActions.left.sensor . NestedPhysicalActions.left.sensor.m-pa.sample ): PhysAct | leftOfPeriod : 1000000, period : 1000000, possibleValues : [0] .. [1], timeNonDet : false >
+                < (NestedPhysicalActions.right.sensor . NestedPhysicalActions.right.sensor.m-pa.sample ): PhysAct | leftOfPeriod : 1000000, period : 1000000, possibleValues : [0] .. [1], timeNonDet : false >
+             >
+            addReactionIndices(init)
+            < queue : EventQueue | queue :
+            empty >
+            < rxns : Invoked | reactions : none >} .
+endom
+
+omod ANALYSIS-NESTEDPHYSICALACTIONS is
+    including TEST-NESTEDPHYSICALACTIONS .
+    including LF-PROP-EXT .
+    including LF-SEARCH-COMMAND .
+endom
+
+omod MODELCHECKER-NESTEDPHYSICALACTIONS is
+    including TEST-NESTEDPHYSICALACTIONS .
+    including LF-OUTPUT-COUNTEREXAMPLE .
+    including LF-PROP-EXT .
+    including MODEL-CHECKER .
+endom
+
+omod SIMULATION-NESTEDPHYSICALACTIONS is
+    including TEST-NESTEDPHYSICALACTIONS .
+    including TIMED-SIMULATION-DYNAMICS .
+endom
+
+red in MODELCHECKER-NESTEDPHYSICALACTIONS : modelCheck(initSystem timeBound 2000000 , ([] (( (@ NestedPhysicalActions.left.sensor.m-sv.last in NestedPhysicalActions.left.sensor) >= @ [0] ))) ) .
+
+red in MODELCHECKER-NESTEDPHYSICALACTIONS : modelCheck(initSystem timeBound 2000000 , ([] (( (@ NestedPhysicalActions.right.sensor.m-sv.last in NestedPhysicalActions.right.sensor) >= @ [0] ))) ) .
+
+quit

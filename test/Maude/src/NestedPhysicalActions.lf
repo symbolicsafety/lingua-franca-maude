@@ -10,12 +10,7 @@ reactor Sensor {
 }
 
 reactor Branch {
-  state initialized: int = 0
   sensor = new Sensor()
-
-  reaction(startup) {=
-    self->initialized = 1;
-  =}
 }
 
 @maudePhysAct(

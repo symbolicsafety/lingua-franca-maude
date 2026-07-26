@@ -381,7 +381,8 @@ public class MaudeGenerator extends GeneratorBase {
         StringBuilder builder = new StringBuilder();
         builder.append("reactions : ");
         if (mReactor.reactions.isEmpty()) {
-            throw new RuntimeException("No reactions found for reactor " + mReactor.getName());
+            builder.append("nil");
+            code.pr(builder.toString());
         }
         else {
             code.pr(builder.toString());

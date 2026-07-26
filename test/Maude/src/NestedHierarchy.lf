@@ -24,12 +24,7 @@ reactor Leaf {
 reactor Branch {
   input in: int
   output out: int
-  state initialized: int = 0
   leaf = new Leaf()
-
-  reaction(startup) {=
-    self->initialized = 1;
-  =}
 
   in -> leaf.in
   leaf.out -> out

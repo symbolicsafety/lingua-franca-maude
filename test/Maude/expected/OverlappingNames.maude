@@ -1,0 +1,78 @@
+---(****************************
+ * Auto-generated Maude model *
+ ******************************)---
+omod OVERLAPPINGNAMES is
+    including LF-REPR .
+    protecting LF-VALUE-TIME .
+
+    op OverlappingNames : -> ReactorId [ctor] .
+    op OverlappingNames.worker : -> ReactorId [ctor] .
+    op OverlappingNames.worker.m-sv.shared : -> RVarId [ctor] .
+    op OverlappingNames.worker.m-out.out : -> RPortId [ctor] .
+    op OverlappingNames.worker.m-la.shared : -> RActionId [ctor] .
+    op startup : -> RActionId [ctor] .
+    op init : -> Configuration .
+
+    eq init =
+        < OverlappingNames.worker : Reactor |
+            inports : none,
+            outports :
+                < OverlappingNames.worker.m-out.out : Port | value : [0] >,
+            state :
+                ( OverlappingNames.worker.m-sv.shared |-> [0] ),
+            timers : none,
+            actions :
+                < OverlappingNames.worker.m-la.shared : LogicalAction | minDelay : 0, minSpacing : 0, policy : defer, payload : [0] >
+                < startup : LogicalAction | minDelay : 0, minSpacing : 0, policy : defer, payload : [0] >,
+            reactions :
+                (reaction when (startup) --> (OverlappingNames.worker.m-la.shared) do {
+                    schedule(OverlappingNames.worker.m-la.shared, [0], [1])
+                })
+                (reaction when (OverlappingNames.worker.m-la.shared) --> (OverlappingNames.worker.m-out.out) do {
+                    (OverlappingNames.worker.m-sv.shared := OverlappingNames.worker.m-la.shared) ;
+                    (OverlappingNames.worker.m-out.out <- OverlappingNames.worker.m-sv.shared)
+                })
+        >
+    .
+endom
+
+omod TEST-OVERLAPPINGNAMES is
+    including OVERLAPPINGNAMES .
+    including DYNAMICS-WITHOUT-TICK .
+
+    ops env queue rxns : -> Oid [ctor] .
+
+    op initSystem : -> GlobalSystem .
+    eq initSystem =
+        { < env : Environment |
+            physicalActions : none
+             >
+            addReactionIndices(init)
+            < queue : EventQueue | queue :
+            addStartup(startup, init, empty) >
+            < rxns : Invoked | reactions : none >} .
+endom
+
+omod ANALYSIS-OVERLAPPINGNAMES is
+    including TEST-OVERLAPPINGNAMES .
+    including LF-PROP-EXT .
+    including LF-SEARCH-COMMAND .
+endom
+
+omod MODELCHECKER-OVERLAPPINGNAMES is
+    including TEST-OVERLAPPINGNAMES .
+    including LF-OUTPUT-COUNTEREXAMPLE .
+    including LF-PROP-EXT .
+    including MODEL-CHECKER .
+endom
+
+omod SIMULATION-OVERLAPPINGNAMES is
+    including TEST-OVERLAPPINGNAMES .
+    including TIMED-SIMULATION-DYNAMICS .
+endom
+
+red in MODELCHECKER-OVERLAPPINGNAMES : modelCheck(initSystem timeBound INF , ([] (( (@ OverlappingNames.worker.m-sv.shared in OverlappingNames.worker) >= @ [0] ))) ) .
+
+red in MODELCHECKER-OVERLAPPINGNAMES : modelCheck(initSystem timeBound INF , ([] (((event(OverlappingNames.worker, OverlappingNames.worker.m-la.shared) inQueue)) -> ((event(OverlappingNames.worker, OverlappingNames.worker.m-la.shared) inQueue)))) ) .
+
+quit
