@@ -145,9 +145,7 @@ public class LTLVisitor extends LTLParserBaseVisitor<String> {
                 throw new RuntimeException("Reactor not defined for "+ctx.lfname.getText() +" IN");
             MaudeReactorInstance reactor = registry.resolveReactor(ctx.reactor.getText());
 
-            String maudeName = getMaudeobjByLFname(reactor, ctx.lfname.getText());
-            if (maudeName == null)
-                throw new RuntimeException("Could not find component " + ctx.lfname.getText() + " IN "+ctx.reactor.getText());
+            String maudeName = reactor.requireMemberName(ctx.lfname.getText());
 
             String op = "";
             if (ctx.bop == null) {
@@ -178,9 +176,7 @@ public class LTLVisitor extends LTLParserBaseVisitor<String> {
                 throw new RuntimeException("Reactor not defined for event "+ctx.reactor.getText());
             MaudeReactorInstance reactor = registry.resolveReactor(ctx.reactor.getText());
 
-            String maudeName = getMaudeobjByLFname(reactor, ctx.trigger.getText());
-            if (maudeName == null)
-                throw new RuntimeException("Could not find component " + ctx.trigger.getText() + " for event in  "+ctx.reactor.getText());
+            String maudeName = reactor.requireTriggerName(ctx.trigger.getText());
 
             String ret = "(event("+reactor+", "+maudeName;
             if (ctx.val != null)
@@ -207,9 +203,8 @@ public class LTLVisitor extends LTLParserBaseVisitor<String> {
 
     public String visitExpr(LTLParser.ExprContext ctx) {
         if (ctx.lfname != null) {
-            //TODO: Translate LF name to Maude name
             MaudeReactorInstance reactor = registry.resolveReactor(ctx.reactor.getText());
-            String maudeName = getMaudeobjByLFname(reactor, ctx.lfname.getText());
+            String maudeName = reactor.requireMemberName(ctx.lfname.getText());
 
 
             return "( @ " + maudeName + " in " + reactor.getName() + ") ";
@@ -254,35 +249,6 @@ public class LTLVisitor extends LTLParserBaseVisitor<String> {
                 i == ctx.terms.size() - 1 ? "" : "/");
         }
         return str.toString();
-    }
-
-    private String getMaudeobjByLFname(MaudeReactorInstance reactor, String lfName) {
-        for (MaudeStateInstance svar : reactor.stateVars) {
-            if (svar.getLfStateVar().getName().equals(lfName))
-                return svar.getName();
-        }
-        for (MaudePortInstance port : reactor.inPorts) {
-            if (port.getLfPort().getName().equals(lfName))
-                return port.getName();
-        }
-        for (MaudePortInstance port : reactor.outPorts) {
-            if (port.getLfPort().getName().equals(lfName))
-                return port.getName();
-        }
-
-        for (MaudeActionInstance action : reactor.logicalActions)
-            if (action.getLfAction().getName().equals(lfName))
-                return action.getName();
-
-        for (MaudeActionInstance action : reactor.physicalActions)
-            if (action.getLfAction().getName().equals(lfName))
-                return action.getName();
-
-        for (MaudeTimerInstance timer : reactor.timers)
-            if (timer.getLfTimer().getName().equals(lfName))
-                return timer.getName();
-
-        return null;
     }
 
 }

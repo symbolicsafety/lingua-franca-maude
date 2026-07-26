@@ -5,7 +5,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -215,6 +215,33 @@ public class MaudeGenerator extends GeneratorBase {
             .findFirst();
     }
 
+    static Map<MaudeActionInstance, Attribute> resolvePhysicalActionAttributes(
+        List<Attribute> properties,
+        MaudeInstanceRegistry registry
+    ) {
+        Map<MaudeActionInstance, Attribute> result = new IdentityHashMap<>();
+        for (Attribute property : properties) {
+            String reactorReference = getParam(property, "inReactor").orElseThrow(
+                () -> new IllegalArgumentException(
+                    "Attribute 'inReactor' missing for physical action property")
+            );
+            String actionName = getParam(property, "name").orElseThrow(
+                () -> new IllegalArgumentException(
+                    "Attribute 'name' missing for physical action property")
+            );
+
+            var reactor = registry.resolveReactor(reactorReference);
+            var action = reactor.requirePhysicalAction(actionName);
+            var previous = result.put(action, property);
+            if (previous != null) {
+                throw new IllegalStateException(
+                    "Duplicate physical action attribute for reactor='"
+                        + reactor.lfReactor.getFullName() + "', name='" + actionName + "'");
+            }
+        }
+        return result;
+    }
+
     protected void generateMaudeTest() {
         code.pr("omod TEST-"+this.main.getName().toUpperCase() +" is");
         code.indent();
@@ -241,41 +268,17 @@ public class MaudeGenerator extends GeneratorBase {
             code.pr(builder.toString());
             code.indent();
 
-            Map<String, Map<String, Attribute>> attrsByReactorThenName = new HashMap<>();
-
-            for (Attribute prop: this.maudePhysActProperties) {
-                String _reactor = getParam(prop, "inReactor").orElseThrow(
-                    () -> new IllegalArgumentException("Attribute 'reactor' missing for physicalAction property")
-                );
-                String _name = getParam(prop, "name").orElseThrow(
-                    () -> new IllegalArgumentException("Attribute 'name' missing for physicalAction property")
-                );
-                Map<String, Attribute> byName = attrsByReactorThenName.computeIfAbsent(_reactor, k -> new HashMap<>());
-
-                // Fail on duplicates of the same (reactor, name)
-                Attribute prev = byName.put(_name, prop);
-                if (prev != null) {
-                    throw new IllegalStateException(
-                        "Duplicate Attribute for reactor=" + _reactor + ", name=" + _name
-                    );
-                }
-            }
+            Map<MaudeActionInstance, Attribute> attributes =
+                resolvePhysicalActionAttributes(this.maudePhysActProperties, this.maudeInstances);
 
             // Validate all physActs and fill
             for (MaudeActionInstance act: this.maudePhysicalActionInstances) {
-
-                String reactorname = act.getParent().lfReactor.getName();
-                Map<String, Attribute> byName = attrsByReactorThenName.get(act.getParent().lfReactor.getName());
-                if (byName == null) {
-                    throw new RuntimeException("Missing Attribute for reactor=" + act.getParent().lfReactor.getName()
-                        + ", name=" + act.lfAction.getName());
-                }
-
-                Attribute match = byName.get(act.lfAction.getName());
-
+                Attribute match = attributes.get(act);
                 if (match == null) {
-                    throw new RuntimeException("Missing Attribute for reactor=" + act.getParent().lfReactor.getName()
-                        + ", name=" + act.lfAction.getName());
+                    throw new RuntimeException(
+                        "Missing physical action attribute for reactor='"
+                            + act.getParent().lfReactor.getFullName() + "', name='"
+                            + act.lfAction.getName() + "'");
                 }
 
                 String vals = getParam(match, "vals").orElseThrow(
