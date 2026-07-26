@@ -4,7 +4,8 @@ target C
   inReactor="MainPhysicalAction",
   name="sample",
   vals="0 .. 1",
-  period=1,
+  period=1000,
+  periodUnit="usec",
   timeNonDet=false
 )
 @maude(

@@ -244,6 +244,7 @@ public class AttributeSpec {
                   new AttrParamSpec("name", AttrParamType.STRING, false),
                   new AttrParamSpec("vals", AttrParamType.STRING, false),
                   new AttrParamSpec("period", AttrParamType.INT, false),
+                  new AttrParamSpec("periodUnit", AttrParamType.STRING, true),
                   new AttrParamSpec("timeNonDet", AttrParamType.BOOLEAN, true))));
       ATTRIBUTE_SPECS_BY_NAME.put(
           "maude",
@@ -251,6 +252,7 @@ public class AttributeSpec {
               List.of(
                   new AttrParamSpec("analysis", AttrParamType.STRING, false),
                   new AttrParamSpec("timeBound", AttrParamType.INT, true),
+                  new AttrParamSpec("timeBoundUnit", AttrParamType.STRING, true),
                   new AttrParamSpec("goal", AttrParamType.STRING, true),
                   new AttrParamSpec("rewrites", AttrParamType.INT, true),
                   new AttrParamSpec("type", AttrParamType.STRING, true))));

@@ -250,10 +250,15 @@ public class MaudeGenerator extends GeneratorBase {
                     () -> new IllegalArgumentException("Attribute 'vals' missing for physicalAction property "+getParam(match, "name").orElse("") )
                 );
 
-                long period = Long.parseLong(getParam(match, "period").orElse("0"));
-                if (period <= 0) { period = 0 ;}
-                //assume milliseconds and convert to nanoseconds. Add timeUnit conversions later
-                period *= 1000000L;
+                long period =
+                    MaudeTime.toNanoseconds(
+                        getParam(match, "period")
+                            .orElseThrow(
+                                () ->
+                                    new IllegalArgumentException(
+                                        "Attribute 'period' missing for physical action property.")),
+                        getParam(match, "periodUnit").orElse(null),
+                        "period");
 
                 Boolean timeNonDet = Boolean.parseBoolean(getParam(match, "timeNonDet").orElse("true"));
 
@@ -639,13 +644,14 @@ public class MaudeGenerator extends GeneratorBase {
 
 
             String timeBound = "INF";
-            Optional<AttrParm> timeBoundParam =
-                prop.getAttrParms().stream().filter(attr -> attr.getName().equals("timeBound")).findFirst();
+            Optional<String> timeBoundParam = getParam(prop, "timeBound");
             if (timeBoundParam.isPresent()) {
-                // What is unit for timeBound? We need to transform it to nanoseconds
-                timeBound = timeBoundParam.get().getValue();
-                //assume milliseconds for now and convert to nanoseconds. Add specifiable timeUnit conversion later
-                timeBound = String.valueOf(Long.parseLong(timeBound) * 1000000L);
+                timeBound =
+                    String.valueOf(
+                        MaudeTime.toNanoseconds(
+                            timeBoundParam.get(),
+                            getParam(prop, "timeBoundUnit").orElse(null),
+                            "timeBound"));
             }
 
             String rewrites = "";
