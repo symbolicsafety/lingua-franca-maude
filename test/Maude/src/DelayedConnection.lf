@@ -1,0 +1,30 @@
+target C
+
+reactor Source {
+  output out: int
+
+  reaction(startup) -> out {=
+    lf_set(out, 1);
+  =}
+}
+
+reactor Sink {
+  input in: int
+  state last: int = 0
+
+  reaction(in) {=
+    self->last = in->value;
+  =}
+}
+
+@maude(
+  analysis="reachability",
+  timeBound=2,
+  goal="last in sink == 1"
+)
+main reactor DelayedConnection {
+  source = new Source()
+  sink = new Sink()
+
+  source.out -> sink.in after 1000 usec
+}

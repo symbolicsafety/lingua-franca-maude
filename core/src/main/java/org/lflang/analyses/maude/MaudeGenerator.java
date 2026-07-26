@@ -17,8 +17,6 @@ import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.eclipse.emf.ecore.resource.Resource;
 
-import org.lflang.TimeUnit;
-import org.lflang.TimeValue;
 import org.lflang.analyses.c.BuildAstParseTreeVisitor;
 import org.lflang.analyses.c.CAst;
 import org.lflang.analyses.c.CToMaudeVisitor;
@@ -39,8 +37,6 @@ import org.lflang.generator.docker.DockerGenerator;
 import org.lflang.lf.AttrParm;
 import org.lflang.lf.Attribute;
 import org.lflang.lf.Connection;
-import org.lflang.lf.Expression;
-import org.lflang.lf.Time;
 import org.lflang.target.Target;
 import org.lflang.util.StringUtil;
 
@@ -348,19 +344,7 @@ public class MaudeGenerator extends GeneratorBase {
                 Connection connection = range.connection;
                 List<RuntimeRange<PortInstance>> destinations = range.destinations;
 
-                // Extract delay value
-                long delay = 0;
-                if (connection.getDelay() != null) {
-                    // Somehow delay is an Expression,
-                    // which makes it hard to convert to nanoseconds.
-                    Expression delayExpr = connection.getDelay();
-                    if (delayExpr instanceof Time) {
-                        long interval = ((Time) delayExpr).getInterval();
-                        String unit = ((Time) delayExpr).getUnit();
-                        TimeValue timeValue = new TimeValue(interval, TimeUnit.fromName(unit));
-                        delay = timeValue.toNanoSeconds();
-                    }
-                }
+                long delay = MaudeConnectionDelay.toNanoseconds(connection.getDelay());
 
                 for (var portRange : destinations) {
                     var destination = portRange.instance;

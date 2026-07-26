@@ -2,7 +2,7 @@ package org.lflang.analyses.maude;
 
 import org.lflang.TimeUnit;
 
-/** Converts time-valued Maude annotation parameters to nanoseconds. */
+/** Converts time-valued Maude inputs to nanoseconds. */
 final class MaudeTime {
 
   private static final String DEFAULT_UNIT = "msec";
@@ -25,10 +25,6 @@ final class MaudeTime {
           parameterName + " must be an integer, but was '" + value + "'.", exception);
     }
 
-    if (magnitude <= 0) {
-      throw new IllegalArgumentException(parameterName + " must be greater than 0.");
-    }
-
     String effectiveUnit = unit == null ? DEFAULT_UNIT : unit;
     final TimeUnit timeUnit;
     try {
@@ -43,6 +39,31 @@ final class MaudeTime {
               + String.join(", ", TimeUnit.list())
               + ".",
           exception);
+    }
+
+    return toNanoseconds(magnitude, timeUnit, parameterName, false);
+  }
+
+  /**
+   * Convert an LF time magnitude to nanoseconds.
+   *
+   * @param magnitude The time magnitude.
+   * @param timeUnit The LF time unit.
+   * @param parameterName The value name, used in diagnostics.
+   * @param allowZero Whether zero is valid.
+   */
+  static long toNanoseconds(
+      long magnitude, TimeUnit timeUnit, String parameterName, boolean allowZero) {
+    if (magnitude < 0 || (!allowZero && magnitude == 0)) {
+      throw new IllegalArgumentException(
+          parameterName
+              + (allowZero ? " must be greater than or equal to 0." : " must be greater than 0."));
+    }
+    if (magnitude == 0) {
+      return 0;
+    }
+    if (timeUnit == null) {
+      throw new IllegalArgumentException(parameterName + " must have a time unit.");
     }
 
     long nanosecondsPerUnit =
@@ -61,7 +82,12 @@ final class MaudeTime {
       return Math.multiplyExact(magnitude, nanosecondsPerUnit);
     } catch (ArithmeticException exception) {
       throw new IllegalArgumentException(
-          parameterName + " overflows nanoseconds: " + value + " " + effectiveUnit + ".",
+          parameterName
+              + " overflows nanoseconds: "
+              + magnitude
+              + " "
+              + timeUnit.getCanonicalName()
+              + ".",
           exception);
     }
   }
