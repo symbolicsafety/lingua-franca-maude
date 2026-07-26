@@ -1,0 +1,48 @@
+target C
+
+reactor Sensor {
+  state last: int = 0
+  physical action sample: int
+
+  reaction(sample) {=
+    self->last = sample->value;
+  =}
+}
+
+reactor Branch {
+  state initialized: int = 0
+  sensor = new Sensor()
+
+  reaction(startup) {=
+    self->initialized = 1;
+  =}
+}
+
+@maudePhysAct(
+  inReactor="left.sensor",
+  name="sample",
+  vals="0 .. 1",
+  period=1,
+  timeNonDet=false
+)
+@maudePhysAct(
+  inReactor="NestedPhysicalActions.right.sensor",
+  name="sample",
+  vals="0 .. 1",
+  period=1,
+  timeNonDet=false
+)
+@maude(
+  analysis="ltl",
+  timeBound=2,
+  goal="[] (last in left.sensor >= 0)"
+)
+@maude(
+  analysis="ltl",
+  timeBound=2,
+  goal="[] (last in NestedPhysicalActions.right.sensor >= 0)"
+)
+main reactor NestedPhysicalActions {
+  left = new Branch()
+  right = new Branch()
+}

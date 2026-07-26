@@ -1,0 +1,52 @@
+target C
+
+reactor Leaf {
+  input in: int
+  output out: int
+  state count: int = 0
+  logical action step: int
+  timer tick(0, 1 msec)
+
+  reaction(tick) -> step {=
+    lf_schedule_int(step, 0, self->count + 1);
+  =}
+
+  reaction(in) -> step {=
+    lf_schedule_int(step, 0, in->value + 1);
+  =}
+
+  reaction(step) -> out {=
+    self->count = step->value;
+    lf_set(out, self->count);
+  =}
+}
+
+reactor Branch {
+  input in: int
+  output out: int
+  state initialized: int = 0
+  leaf = new Leaf()
+
+  reaction(startup) {=
+    self->initialized = 1;
+  =}
+
+  in -> leaf.in
+  leaf.out -> out
+}
+
+@maude(
+  analysis="ltl",
+  timeBound=2,
+  goal="[] (count in left.leaf >= 0)"
+)
+@maude(
+  analysis="ltl",
+  timeBound=2,
+  goal="[] (count in NestedHierarchy.right.leaf >= 0)"
+)
+main reactor NestedHierarchy {
+  left = new Branch()
+  right = new Branch()
+  left.out -> right.in
+}

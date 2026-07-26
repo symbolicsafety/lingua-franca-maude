@@ -1,0 +1,28 @@
+target C
+
+reactor Worker {
+  state shared: int = 0
+  logical action shared: int
+  output out: int
+
+  reaction(startup) -> shared {=
+    lf_schedule_int(shared, 0, 1);
+  =}
+
+  reaction(shared) -> out {=
+    self->shared = shared->value;
+    lf_set(out, self->shared);
+  =}
+}
+
+@maude(
+  analysis="ltl",
+  goal="[] (shared in worker >= 0)"
+)
+@maude(
+  analysis="ltl",
+  goal="[] ((event(worker, shared) inQueue) -> (event(worker, shared) inQueue))"
+)
+main reactor OverlappingNames {
+  worker = new Worker()
+}

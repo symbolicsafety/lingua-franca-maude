@@ -1,0 +1,50 @@
+target C
+
+reactor EncodedNames {
+  state a_b: int = 1
+  state ab: int = 2
+  state aZub: int = 3
+  state m_sv: int = 4
+  logical action action_one
+  logical action actionone
+
+  reaction(startup) -> action_one, actionone {=
+    self->a_b = self->a_b + 1;
+    self->ab = self->ab + 1;
+    self->aZub = self->aZub + 1;
+    self->m_sv = self->m_sv + 1;
+    lf_schedule(action_one, 0);
+    lf_schedule(actionone, 0);
+  =}
+
+  reaction(action_one) {=
+    self->a_b = self->a_b + 1;
+  =}
+
+  reaction(actionone) {=
+    self->ab = self->ab + 1;
+  =}
+}
+
+@maude(
+  analysis="ltl",
+  goal="[] (a_b in worker_one >= 0)"
+)
+@maude(
+  analysis="ltl",
+  goal="[] (ab in workerone >= 0)"
+)
+@maude(
+  analysis="ltl",
+  goal="[] (aZub in workerZuone >= 0)"
+)
+@maude(
+  analysis="ltl",
+  goal="[] (m_sv in m_sv >= 0)"
+)
+main reactor IdentifierEncoding {
+  worker_one = new EncodedNames()
+  workerone = new EncodedNames()
+  workerZuone = new EncodedNames()
+  m_sv = new EncodedNames()
+}
