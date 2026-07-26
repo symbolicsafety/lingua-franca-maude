@@ -69,4 +69,8 @@ endom
 
 red in MODELCHECKER-MAINREACTORCOMPONENTS : modelCheck(initSystem timeBound 2000000 , (<> (( (@ MainReactorComponents.m-sv.count in MainReactorComponents) === @ [2] ))) ) .
 
+red in ANALYSIS-MAINREACTORCOMPONENTS : search in 'ANALYSIS-MAINREACTORCOMPONENTS : initSystem timeBound 2000000 =>* (( (@ MainReactorComponents.m-sv.count in MainReactorComponents) === @ [2] )) .
+
+rew [6] in SIMULATION-MAINREACTORCOMPONENTS : initSystem timeBound 2000000 .
+
 quit

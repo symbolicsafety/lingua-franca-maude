@@ -1,0 +1,22 @@
+target C
+
+@maudePhysAct(
+  inReactor="MainPhysicalAction",
+  name="sample",
+  vals="0 .. 1",
+  period=1,
+  timeNonDet=false
+)
+@maude(
+  analysis="reachability",
+  timeBound=2,
+  goal="last in MainPhysicalAction == 1"
+)
+main reactor MainPhysicalAction {
+  state last: int = 0
+  physical action sample: int
+
+  reaction(sample) {=
+    self->last = sample->value;
+  =}
+}

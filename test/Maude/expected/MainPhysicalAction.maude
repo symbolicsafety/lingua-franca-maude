@@ -1,0 +1,68 @@
+---(****************************
+ * Auto-generated Maude model *
+ ******************************)---
+omod MAINPHYSICALACTION is
+    including LF-REPR .
+    protecting LF-VALUE-TIME .
+
+    op MainPhysicalAction : -> ReactorId [ctor] .
+    op MainPhysicalAction.m-sv.last : -> RVarId [ctor] .
+    op MainPhysicalAction.m-pa.sample : -> RActionId [ctor] .
+    op init : -> Configuration .
+
+    eq init =
+        < MainPhysicalAction : Reactor |
+            inports : none,
+            outports : none,
+            state :
+                ( MainPhysicalAction.m-sv.last |-> [0] ),
+            timers : none,
+            actions :
+                < MainPhysicalAction.m-pa.sample : PhysicalAction | minDelay : 0, minSpacing : 0, policy : defer, payload : [0] >,
+            reactions :
+                (reaction when (MainPhysicalAction.m-pa.sample) do {
+                    (MainPhysicalAction.m-sv.last := MainPhysicalAction.m-pa.sample)
+                })
+        >
+    .
+endom
+
+omod TEST-MAINPHYSICALACTION is
+    including MAINPHYSICALACTION .
+    including DYNAMICS-WITHOUT-TICK .
+
+    ops env queue rxns : -> Oid [ctor] .
+
+    op initSystem : -> GlobalSystem .
+    eq initSystem =
+        { < env : Environment |
+            physicalActions :
+                < (MainPhysicalAction . MainPhysicalAction.m-pa.sample ): PhysAct | leftOfPeriod : 1000000, period : 1000000, possibleValues : [0] .. [1], timeNonDet : false >
+             >
+            addReactionIndices(init)
+            < queue : EventQueue | queue :
+            empty >
+            < rxns : Invoked | reactions : none >} .
+endom
+
+omod ANALYSIS-MAINPHYSICALACTION is
+    including TEST-MAINPHYSICALACTION .
+    including LF-PROP-EXT .
+    including LF-SEARCH-COMMAND .
+endom
+
+omod MODELCHECKER-MAINPHYSICALACTION is
+    including TEST-MAINPHYSICALACTION .
+    including LF-OUTPUT-COUNTEREXAMPLE .
+    including LF-PROP-EXT .
+    including MODEL-CHECKER .
+endom
+
+omod SIMULATION-MAINPHYSICALACTION is
+    including TEST-MAINPHYSICALACTION .
+    including TIMED-SIMULATION-DYNAMICS .
+endom
+
+red in ANALYSIS-MAINPHYSICALACTION : search in 'ANALYSIS-MAINPHYSICALACTION : initSystem timeBound 2000000 =>* (( (@ MainPhysicalAction.m-sv.last in MainPhysicalAction) === @ [1] )) .
+
+quit

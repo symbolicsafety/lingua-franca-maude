@@ -13,6 +13,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.emf.ecore.resource.ResourceSet;
@@ -70,7 +71,6 @@ class MaudeRegressionTest {
 
     for (Path golden : filesWithExtension(EXPECTED_DIR, ".maude")) {
       String model = Files.readString(golden);
-      long expectedResults = model.lines().filter(line -> line.startsWith("red in ")).count();
 
       Process process =
           new ProcessBuilder(
@@ -88,11 +88,27 @@ class MaudeRegressionTest {
       String output = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
       assertEquals(0, process.exitValue(), () -> "Maude failed for " + golden + "\n" + output);
 
-      long passingResults = output.lines().filter(line -> line.equals("result Bool: true")).count();
-      assertEquals(
-          expectedResults,
-          passingResults,
-          () -> "Not every analysis passed for " + golden + "\n" + output);
+      assertResultCount(
+          model,
+          output,
+          "red in MODELCHECKER-",
+          line -> line.equals("result Bool: true"),
+          "LTL analysis",
+          golden);
+      assertResultCount(
+          model,
+          output,
+          "red in ANALYSIS-",
+          line -> line.equals("result SearchOutput: trace"),
+          "reachability analysis",
+          golden);
+      assertResultCount(
+          model,
+          output,
+          "rew ",
+          line -> line.startsWith("result ClockedSystem:"),
+          "simulation",
+          golden);
       assertFalse(
           output.contains("Warning:") || output.contains("Error:"),
           () -> "Maude reported a diagnostic for " + golden + "\n" + output);
@@ -114,6 +130,19 @@ class MaudeRegressionTest {
 
     assertFalse(context.getErrorReporter().getErrorsOccurred(), "Maude generation reported errors");
     return context.getFileConfig().getModelGenPath().resolve(stem(source) + ".maude");
+  }
+
+  private static void assertResultCount(
+      String model,
+      String output,
+      String commandPrefix,
+      Predicate<String> successfulResult,
+      String analysis,
+      Path golden) {
+    long expected = model.lines().filter(line -> line.startsWith(commandPrefix)).count();
+    long actual = output.lines().filter(successfulResult).count();
+    assertEquals(
+        expected, actual, () -> "Not every " + analysis + " passed for " + golden + "\n" + output);
   }
 
   private static List<Attribute> attributes(Reactor reactor, String name) {

@@ -5,6 +5,16 @@ target C
   timeBound=2,
   goal="<> (count in MainReactorComponents == 2)"
 )
+@maude(
+  analysis="reachability",
+  timeBound=2,
+  goal="count in MainReactorComponents == 2"
+)
+@maude(
+  analysis="simulation",
+  timeBound=2,
+  rewrites=6
+)
 main reactor MainReactorComponents {
   state count: int = 0
   logical action step: int
