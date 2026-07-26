@@ -1,6 +1,7 @@
 package org.lflang.analyses.maude;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -10,6 +11,8 @@ import java.nio.file.Path;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.lflang.DefaultMessageReporter;
+import org.lflang.util.LFCommand;
 
 class MaudeRunnerTest {
 
@@ -69,9 +72,57 @@ class MaudeRunnerTest {
     assertTrue(exception.getMessage().contains(missingMaudeBase.toString()));
   }
 
+  @Test
+  void acceptsSuccessfulProcessExit() {
+    var reporter = new DefaultMessageReporter();
+
+    boolean successful =
+        MaudeRunner.runCommand(new FakeCommand(0), Path.of("model.maude"), reporter);
+
+    assertTrue(successful);
+    assertFalse(reporter.getErrorsOccurred());
+  }
+
+  @Test
+  void reportsNonzeroProcessExit() {
+    var reporter = new DefaultMessageReporter();
+
+    boolean successful =
+        MaudeRunner.runCommand(new FakeCommand(17), Path.of("model.maude"), reporter);
+
+    assertFalse(successful);
+    assertTrue(reporter.getErrorsOccurred());
+  }
+
+  @Test
+  void reportsProcessStartFailure() {
+    var reporter = new DefaultMessageReporter();
+
+    boolean successful =
+        MaudeRunner.runCommand(new FakeCommand(-1), Path.of("model.maude"), reporter);
+
+    assertFalse(successful);
+    assertTrue(reporter.getErrorsOccurred());
+  }
+
   private Path createLfMaudeBase() throws IOException {
     Path lfMaudeBase = Files.createDirectory(tempDir.resolve("lf-maude"));
     Files.createFile(lfMaudeBase.resolve("lf-main-concrete.maude"));
     return lfMaudeBase;
+  }
+
+  private static final class FakeCommand extends LFCommand {
+
+    private final int exitCode;
+
+    private FakeCommand(int exitCode) {
+      super(new ProcessBuilder("maude"), true);
+      this.exitCode = exitCode;
+    }
+
+    @Override
+    public int run() {
+      return exitCode;
+    }
   }
 }

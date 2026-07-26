@@ -132,8 +132,18 @@ public class MaudeRunner {
       if (maudeVerboseFile != null) {
         command.redirectErrorsTo(maudeVerboseFile);
       }
-      command.run();
+      runCommand(command, path, reporter);
     }
+  }
+
+  static boolean runCommand(LFCommand command, Path model, MessageReporter reporter) {
+    int exitCode = command.run();
+    if (exitCode == 0) {
+      return true;
+    }
+
+    reporter.at(model).error("Maude failed for " + model + " with exit code " + exitCode + ".");
+    return false;
   }
 
   record MaudeDependencies(String executable, Path semanticsLibrary) {}
