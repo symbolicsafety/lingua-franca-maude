@@ -674,13 +674,7 @@ public abstract class GeneratorBase extends AbstractLFValidator {
                     + " verification model. To check the generated verification model, set the"
                     + " \"verify\" target property to true or pass \"--verify\" to the lfc"
                     + " command");
-      } else if (commandFactory.createCommand("maude", List.of()) == null) {
-        messageReporter
-            .nowhere()
-            .error(
-                "Fail to check the generated verification models because Maude is not installed.");
       } else {
-        // Run the Maude tool.
         maudeGenerator.runner.run();
       }
     }

@@ -26,14 +26,12 @@ import org.lflang.FileConfig;
 import org.lflang.LFRuntimeModule;
 import org.lflang.LFStandaloneSetup;
 import org.lflang.ast.ASTUtils;
-import org.lflang.generator.GeneratorCommandFactory;
 import org.lflang.generator.LFGeneratorContext;
 import org.lflang.generator.MainContext;
 import org.lflang.generator.c.CGenerator;
 import org.lflang.lf.Attribute;
 import org.lflang.lf.Reactor;
 import org.lflang.target.property.VerifyProperty;
-import org.lflang.util.LFCommand;
 
 class MaudeRegressionTest {
 
@@ -69,19 +67,27 @@ class MaudeRegressionTest {
   }
 
   @Test
-  void maudeExecutionIsGatedByVerifyProperty() throws IOException {
+  void maudeExecutionIsSkippedWhenVerifyPropertyIsFalse() throws IOException {
     Path source = SOURCE_DIR.resolve("MainReactorComponents.lf");
 
-    var verificationDisabled = runVerificationHook(source, "verification-disabled", false);
-    assertTrue(Files.isRegularFile(verificationDisabled.generatedModel()));
-    assertEquals(0, verificationDisabled.commandFactory().maudeLookups);
+    var result = runVerificationHook(source, "verification-disabled", false);
+    assertTrue(Files.isRegularFile(result.generatedModel()));
     assertFalse(
-        verificationDisabled.context().getErrorReporter().getErrorsOccurred(),
+        result.context().getErrorReporter().getErrorsOccurred(),
         "Generating a Maude model without verification should not require Maude");
+  }
 
-    var verificationEnabled = runVerificationHook(source, "verification-enabled", true);
-    assertTrue(Files.isRegularFile(verificationEnabled.generatedModel()));
-    assertEquals(1, verificationEnabled.commandFactory().maudeLookups);
+  @Test
+  void verificationUsesResolvedDependencies() throws IOException {
+    requiredEnvironmentFile("LF_MAUDE_BASE", "lf-main-concrete.maude", false);
+    Path source = SOURCE_DIR.resolve("MainReactorComponents.lf");
+
+    var result = runVerificationHook(source, "verification-enabled", true);
+
+    assertTrue(Files.isRegularFile(result.generatedModel()));
+    assertFalse(
+        result.context().getErrorReporter().getErrorsOccurred(),
+        "Verification should use the configured Maude dependencies");
   }
 
   @Test
@@ -163,13 +169,12 @@ class MaudeRegressionTest {
             LFGeneratorContext.Mode.STANDALONE, resource, fileAccess, CancelIndicator.NullImpl);
     VerifyProperty.INSTANCE.override(context.getTargetConfig(), verify);
 
-    var commandFactory = new TrackingCommandFactory(context);
-    var generator = new VerificationHookGenerator(context, commandFactory);
+    var generator = new VerificationHookGenerator(context);
     generator.runVerifierIfPropertiesDetected(resource);
 
     Path generatedModel =
         context.getFileConfig().getModelGenPath().resolve(stem(source) + ".maude");
-    return new VerificationHookResult(context, commandFactory, generatedModel);
+    return new VerificationHookResult(context, generatedModel);
   }
 
   private static void assertResultCount(
@@ -191,33 +196,12 @@ class MaudeRegressionTest {
         .toList();
   }
 
-  private record VerificationHookResult(
-      MainContext context, TrackingCommandFactory commandFactory, Path generatedModel) {}
-
-  private static final class TrackingCommandFactory extends GeneratorCommandFactory {
-
-    private int maudeLookups;
-
-    private TrackingCommandFactory(LFGeneratorContext context) {
-      super(context.getErrorReporter(), context.getFileConfig());
-    }
-
-    @Override
-    public LFCommand createCommand(String command, List<String> arguments) {
-      if (!"maude".equals(command)) {
-        throw new AssertionError("Unexpected command lookup: " + command);
-      }
-      maudeLookups++;
-      return null;
-    }
-  }
+  private record VerificationHookResult(MainContext context, Path generatedModel) {}
 
   private static final class VerificationHookGenerator extends CGenerator {
 
-    private VerificationHookGenerator(
-        LFGeneratorContext context, GeneratorCommandFactory commandFactory) {
+    private VerificationHookGenerator(LFGeneratorContext context) {
       super(context, false);
-      this.commandFactory = commandFactory;
     }
 
     private void runVerifierIfPropertiesDetected(Resource resource) {
