@@ -27,6 +27,14 @@ omod NESTEDHIERARCHY is
     op init : -> Configuration .
 
     eq init =
+        < NestedHierarchy : Reactor |
+            inports : none,
+            outports : none,
+            state : empty,
+            timers : none,
+            actions : none,
+            reactions : nil
+        >
         < NestedHierarchy.left : Reactor |
             inports :
                 < NestedHierarchy.left.m-in.in : Port | value : [0] >,

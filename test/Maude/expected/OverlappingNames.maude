@@ -14,6 +14,14 @@ omod OVERLAPPINGNAMES is
     op init : -> Configuration .
 
     eq init =
+        < OverlappingNames : Reactor |
+            inports : none,
+            outports : none,
+            state : empty,
+            timers : none,
+            actions : none,
+            reactions : nil
+        >
         < OverlappingNames.worker : Reactor |
             inports : none,
             outports :

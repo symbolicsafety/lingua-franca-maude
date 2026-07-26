@@ -311,9 +311,6 @@ public class MaudeGenerator extends GeneratorBase {
         code.pr("eq init = ");
 
         for (var reactor : this.maudeReactorInstances) {
-            if (reactor.lfReactor.isMainOrFederated())
-                continue;
-
             code.indent();
             code.pr("< "+reactor.getName()+" : Reactor |");
             // generate reactor attributes

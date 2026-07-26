@@ -1,0 +1,20 @@
+target C
+
+@maude(
+  analysis="ltl",
+  timeBound=2,
+  goal="<> (count in MainReactorComponents == 2)"
+)
+main reactor MainReactorComponents {
+  state count: int = 0
+  logical action step: int
+  timer tick(0, 1 msec)
+
+  reaction(tick) -> step {=
+    lf_schedule_int(step, 0, self->count + 1);
+  =}
+
+  reaction(step) {=
+    self->count = step->value;
+  =}
+}

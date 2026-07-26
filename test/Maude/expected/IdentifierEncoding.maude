@@ -41,6 +41,14 @@ omod IDENTIFIERENCODING is
     op init : -> Configuration .
 
     eq init =
+        < IdentifierEncoding : Reactor |
+            inports : none,
+            outports : none,
+            state : empty,
+            timers : none,
+            actions : none,
+            reactions : nil
+        >
         < IdentifierEncoding.workerZuone : Reactor |
             inports : none,
             outports : none,
