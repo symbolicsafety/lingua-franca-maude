@@ -26,11 +26,15 @@ import org.lflang.FileConfig;
 import org.lflang.LFRuntimeModule;
 import org.lflang.LFStandaloneSetup;
 import org.lflang.ast.ASTUtils;
+import org.lflang.generator.GeneratorBase;
 import org.lflang.generator.LFGeneratorContext;
 import org.lflang.generator.MainContext;
-import org.lflang.generator.c.CGenerator;
+import org.lflang.generator.TargetTypes;
+import org.lflang.generator.c.CTypes;
+import org.lflang.generator.docker.DockerGenerator;
 import org.lflang.lf.Attribute;
 import org.lflang.lf.Reactor;
+import org.lflang.target.Target;
 import org.lflang.target.property.VerifyProperty;
 
 class MaudeRegressionTest {
@@ -75,6 +79,43 @@ class MaudeRegressionTest {
     assertFalse(
         result.context().getErrorReporter().getErrorsOccurred(),
         "Generating a Maude model without verification should not require Maude");
+  }
+
+  @Test
+  void rejectsMaudeAnnotationsForNonCTargets() throws IOException {
+    for (Target target : List.of(Target.Python, Target.CCPP)) {
+      String reactorName = "Unsupported" + target.getDisplayName();
+      Path source = tempDir.resolve(reactorName + ".lf");
+      Files.writeString(
+          source,
+          """
+          target %s
+
+          @maude(analysis="simulation", timeBound=1, rewrites=1)
+          @maudePhysAct(
+            inReactor="%s",
+            name="sensor",
+            vals="{1}",
+            period=1,
+            timeNonDet=false
+          )
+          main reactor %s {
+            physical action sensor: int
+          }
+          """
+              .formatted(target.getDisplayName(), reactorName, reactorName));
+
+      var result =
+          runVerificationHook(
+              source, "unsupported-" + target.getDirectoryName().toLowerCase(), false);
+
+      assertTrue(
+          result.context().getErrorReporter().getErrorsOccurred(),
+          () -> "Maude annotations on target " + target + " should report an error");
+      assertFalse(
+          Files.exists(result.generatedModel()),
+          () -> "A Maude model should not be generated for target " + target);
+    }
   }
 
   @Test
@@ -198,14 +239,29 @@ class MaudeRegressionTest {
 
   private record VerificationHookResult(MainContext context, Path generatedModel) {}
 
-  private static final class VerificationHookGenerator extends CGenerator {
+  private static final class VerificationHookGenerator extends GeneratorBase {
 
     private VerificationHookGenerator(LFGeneratorContext context) {
-      super(context, false);
+      super(context);
     }
 
     private void runVerifierIfPropertiesDetected(Resource resource) {
       super.runVerifierIfPropertiesDetected(resource, context);
+    }
+
+    @Override
+    public TargetTypes getTargetTypes() {
+      return new CTypes();
+    }
+
+    @Override
+    protected DockerGenerator getDockerGenerator(LFGeneratorContext context) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Target getTarget() {
+      return targetConfig.target;
     }
   }
 

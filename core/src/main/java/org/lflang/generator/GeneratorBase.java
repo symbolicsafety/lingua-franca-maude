@@ -36,6 +36,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.resource.Resource;
@@ -642,8 +643,7 @@ public abstract class GeneratorBase extends AbstractLFValidator {
    * to be generated before the target code since code generation changes LF program (desugar
    * connections, etc.).
    */
-  protected void runVerifierIfPropertiesDetected(
-      Resource resource, LFGeneratorContext lfContext) {
+  protected void runVerifierIfPropertiesDetected(Resource resource, LFGeneratorContext lfContext) {
     Optional<Reactor> mainOpt = ASTUtils.getMainReactor(resource);
     if (mainOpt.isEmpty()) return;
     Reactor main = mainOpt.get();
@@ -661,7 +661,20 @@ public abstract class GeneratorBase extends AbstractLFValidator {
             .filter(attr -> attr.getAttrName().equals("maude"))
             .collect(Collectors.toList());
 
-    if (maudeprop.size() > 0) {
+    Target maudeTarget = targetConfig.target;
+    if ((!maudeprop.isEmpty() || !maudePAprop.isEmpty()) && maudeTarget != Target.C) {
+      Stream.concat(maudeprop.stream(), maudePAprop.stream())
+          .forEach(
+              attribute ->
+                  messageReporter
+                      .at(attribute)
+                      .error(
+                          "@"
+                              + attribute.getAttrName()
+                              + " is only supported with target C, not target "
+                              + maudeTarget.getDisplayName()
+                              + "."));
+    } else if (maudeprop.size() > 0) {
       // Generate maude files.
       MaudeGenerator maudeGenerator = new MaudeGenerator(lfContext, maudeprop, maudePAprop);
       maudeGenerator.doGenerate(resource, lfContext);
@@ -687,8 +700,6 @@ public abstract class GeneratorBase extends AbstractLFValidator {
           .warning(
               "Verification using \"@property\" and \"--verify\" is an experimental feature. Use"
                   + " with caution.");
-
-
 
       // Generate uclid files.
       UclidGenerator uclidGenerator = new UclidGenerator(lfContext, properties);
