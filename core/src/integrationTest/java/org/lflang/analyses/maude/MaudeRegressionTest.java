@@ -26,10 +26,14 @@ import org.lflang.FileConfig;
 import org.lflang.LFRuntimeModule;
 import org.lflang.LFStandaloneSetup;
 import org.lflang.ast.ASTUtils;
+import org.lflang.generator.GeneratorCommandFactory;
 import org.lflang.generator.LFGeneratorContext;
 import org.lflang.generator.MainContext;
+import org.lflang.generator.c.CGenerator;
 import org.lflang.lf.Attribute;
 import org.lflang.lf.Reactor;
+import org.lflang.target.property.VerifyProperty;
+import org.lflang.util.LFCommand;
 
 class MaudeRegressionTest {
 
@@ -62,6 +66,22 @@ class MaudeRegressionTest {
           normalize(Files.readString(generated)),
           () -> "Generated Maude model differs from " + golden);
     }
+  }
+
+  @Test
+  void maudeExecutionIsGatedByVerifyProperty() throws IOException {
+    Path source = SOURCE_DIR.resolve("MainReactorComponents.lf");
+
+    var verificationDisabled = runVerificationHook(source, "verification-disabled", false);
+    assertTrue(Files.isRegularFile(verificationDisabled.generatedModel()));
+    assertEquals(0, verificationDisabled.commandFactory().maudeLookups);
+    assertFalse(
+        verificationDisabled.context().getErrorReporter().getErrorsOccurred(),
+        "Generating a Maude model without verification should not require Maude");
+
+    var verificationEnabled = runVerificationHook(source, "verification-enabled", true);
+    assertTrue(Files.isRegularFile(verificationEnabled.generatedModel()));
+    assertEquals(1, verificationEnabled.commandFactory().maudeLookups);
   }
 
   @Test
@@ -132,6 +152,26 @@ class MaudeRegressionTest {
     return context.getFileConfig().getModelGenPath().resolve(stem(source) + ".maude");
   }
 
+  private VerificationHookResult runVerificationHook(
+      Path source, String outputDirectory, boolean verify) throws IOException {
+    Resource resource = FileConfig.getResource(source.toFile(), resourceSetProvider);
+    assertTrue(resource.getErrors().isEmpty(), () -> "Could not parse " + source);
+
+    fileAccess.setOutputPath(tempDir.resolve(outputDirectory).resolve("src-gen").toString());
+    var context =
+        new MainContext(
+            LFGeneratorContext.Mode.STANDALONE, resource, fileAccess, CancelIndicator.NullImpl);
+    VerifyProperty.INSTANCE.override(context.getTargetConfig(), verify);
+
+    var commandFactory = new TrackingCommandFactory(context);
+    var generator = new VerificationHookGenerator(context, commandFactory);
+    generator.runVerifierIfPropertiesDetected(resource);
+
+    Path generatedModel =
+        context.getFileConfig().getModelGenPath().resolve(stem(source) + ".maude");
+    return new VerificationHookResult(context, commandFactory, generatedModel);
+  }
+
   private static void assertResultCount(
       String model,
       String output,
@@ -149,6 +189,40 @@ class MaudeRegressionTest {
     return AttributeUtils.getAttributes(reactor).stream()
         .filter(attribute -> name.equals(attribute.getAttrName()))
         .toList();
+  }
+
+  private record VerificationHookResult(
+      MainContext context, TrackingCommandFactory commandFactory, Path generatedModel) {}
+
+  private static final class TrackingCommandFactory extends GeneratorCommandFactory {
+
+    private int maudeLookups;
+
+    private TrackingCommandFactory(LFGeneratorContext context) {
+      super(context.getErrorReporter(), context.getFileConfig());
+    }
+
+    @Override
+    public LFCommand createCommand(String command, List<String> arguments) {
+      if (!"maude".equals(command)) {
+        throw new AssertionError("Unexpected command lookup: " + command);
+      }
+      maudeLookups++;
+      return null;
+    }
+  }
+
+  private static final class VerificationHookGenerator extends CGenerator {
+
+    private VerificationHookGenerator(
+        LFGeneratorContext context, GeneratorCommandFactory commandFactory) {
+      super(context, false);
+      this.commandFactory = commandFactory;
+    }
+
+    private void runVerifierIfPropertiesDetected(Resource resource) {
+      super.runVerifierIfPropertiesDetected(resource, context);
+    }
   }
 
   private static List<Path> filesWithExtension(Path directory, String extension)

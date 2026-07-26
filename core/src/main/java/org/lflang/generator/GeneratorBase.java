@@ -642,7 +642,8 @@ public abstract class GeneratorBase extends AbstractLFValidator {
    * to be generated before the target code since code generation changes LF program (desugar
    * connections, etc.).
    */
-  private void runVerifierIfPropertiesDetected(Resource resource, LFGeneratorContext lfContext) {
+  protected void runVerifierIfPropertiesDetected(
+      Resource resource, LFGeneratorContext lfContext) {
     Optional<Reactor> mainOpt = ASTUtils.getMainReactor(resource);
     if (mainOpt.isEmpty()) return;
     Reactor main = mainOpt.get();
@@ -651,28 +652,37 @@ public abstract class GeneratorBase extends AbstractLFValidator {
         AttributeUtils.getAttributes(main).stream()
             .filter(attr -> attr.getAttrName().equals("property"))
             .collect(Collectors.toList());
-      List<Attribute> maudePAprop = AttributeUtils.getAttributes(main).stream()
-          .filter(attr -> attr.getAttrName().equals("maudePhysAct"))
-          .collect(Collectors.toList());
-      List<Attribute> maudeprop = AttributeUtils.getAttributes(main).stream()
-          .filter(attr -> attr.getAttrName().equals("maude"))
-          .collect(Collectors.toList());
+    List<Attribute> maudePAprop =
+        AttributeUtils.getAttributes(main).stream()
+            .filter(attr -> attr.getAttrName().equals("maudePhysAct"))
+            .collect(Collectors.toList());
+    List<Attribute> maudeprop =
+        AttributeUtils.getAttributes(main).stream()
+            .filter(attr -> attr.getAttrName().equals("maude"))
+            .collect(Collectors.toList());
 
     if (maudeprop.size() > 0) {
-        // Generate maude files.
-        MaudeGenerator maudeGenerator = new MaudeGenerator(lfContext, maudeprop, maudePAprop);
-        maudeGenerator.doGenerate(resource, lfContext);
+      // Generate maude files.
+      MaudeGenerator maudeGenerator = new MaudeGenerator(lfContext, maudeprop, maudePAprop);
+      maudeGenerator.doGenerate(resource, lfContext);
 
-        if (commandFactory.createCommand("maude", List.of()) == null) {
-            messageReporter
-                .nowhere()
-                .error(
-                    "Fail to check the generated verification models because Maude is not"
-                        + " installed.");
-        } else {
-            // Run the Uclid tool.
-            maudeGenerator.runner.run();
-        }
+      if (!maudeGenerator.getTargetConfig().get(VerifyProperty.INSTANCE)) {
+        messageReporter
+            .nowhere()
+            .warning(
+                "The \"verify\" target property is set to false. Skip checking the Maude"
+                    + " verification model. To check the generated verification model, set the"
+                    + " \"verify\" target property to true or pass \"--verify\" to the lfc"
+                    + " command");
+      } else if (commandFactory.createCommand("maude", List.of()) == null) {
+        messageReporter
+            .nowhere()
+            .error(
+                "Fail to check the generated verification models because Maude is not installed.");
+      } else {
+        // Run the Maude tool.
+        maudeGenerator.runner.run();
+      }
     }
 
     if (properties.size() > 0) {
