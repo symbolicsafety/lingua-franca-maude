@@ -23,7 +23,7 @@ omod MAINREACTORCOMPONENTS is
                 < MainReactorComponents.m-la.step : LogicalAction | minDelay : 0, minSpacing : 0, policy : defer, payload : [0] >,
             reactions :
                 (reaction when (MainReactorComponents.m-t.tick) --> (MainReactorComponents.m-la.step) do {
-                    schedule(MainReactorComponents.m-la.step, [0], (MainReactorComponents.m-sv.count + [1]))
+                    schedule(MainReactorComponents.m-la.step, [1000000], (MainReactorComponents.m-sv.count + [1]))
                 })
                 (reaction when (MainReactorComponents.m-la.step) do {
                     (MainReactorComponents.m-sv.count := MainReactorComponents.m-la.step)
@@ -67,10 +67,10 @@ omod SIMULATION-MAINREACTORCOMPONENTS is
     including TIMED-SIMULATION-DYNAMICS .
 endom
 
-red in MODELCHECKER-MAINREACTORCOMPONENTS : modelCheck(initSystem timeBound 2000000 , (<> (( (@ MainReactorComponents.m-sv.count in MainReactorComponents) === @ [2] ))) ) .
+red in MODELCHECKER-MAINREACTORCOMPONENTS : modelCheck(initSystem timeBound 3000000 , (<> (( (@ MainReactorComponents.m-sv.count in MainReactorComponents) === @ [2] ))) ) .
 
-red in ANALYSIS-MAINREACTORCOMPONENTS : search in 'ANALYSIS-MAINREACTORCOMPONENTS : initSystem timeBound 2000000 =>* (( (@ MainReactorComponents.m-sv.count in MainReactorComponents) === @ [2] )) .
+red in ANALYSIS-MAINREACTORCOMPONENTS : search in 'ANALYSIS-MAINREACTORCOMPONENTS : initSystem timeBound 3000000 =>* (( (@ MainReactorComponents.m-sv.count in MainReactorComponents) === @ [2] )) .
 
-rew [6] in SIMULATION-MAINREACTORCOMPONENTS : initSystem timeBound 2000000 .
+rew [6] in SIMULATION-MAINREACTORCOMPONENTS : initSystem timeBound 3000000 .
 
 quit

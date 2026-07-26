@@ -2,6 +2,7 @@ package org.lflang.analyses.c;
 
 import org.lflang.analyses.c.CAst.AdditionNode;
 import org.lflang.analyses.c.CAst.AssignmentNode;
+import org.lflang.analyses.c.CAst.AstNode;
 import org.lflang.analyses.c.CAst.DivisionNode;
 import org.lflang.analyses.c.CAst.EqualNode;
 import org.lflang.analyses.c.CAst.GreaterEqualNode;
@@ -170,8 +171,7 @@ public class CToMaudeVisitor extends CBaseAstVisitor<String> {
     public String visitScheduleActionNode(ScheduleActionNode node) {
         String name = ((VariableNode) node.children.get(0)).name;
         var mAction = parent.requireAction(name);
-        String additionalDelay = visit(node.children.get(1));
-        Long delay = Long.parseLong(additionalDelay.replaceAll("\\[|\\]",""));
+        long delay = evaluateScheduleDelay(node.children.get(1));
         String payload = "[" + mAction.payload.toString() + "]";
         return "schedule(" + mAction.getName() + ", [" + delay + "], " + payload + ")";
     }
@@ -180,11 +180,54 @@ public class CToMaudeVisitor extends CBaseAstVisitor<String> {
     public String visitScheduleActionIntNode(ScheduleActionIntNode node) {
         String name = ((VariableNode) node.children.get(0)).name;
         var mAction = parent.requireAction(name);
-        String additionalDelay = visit(node.children.get(1));
-        Long delay = Long.parseLong(additionalDelay.replaceAll("\\[|\\]",""));
+        long delay = evaluateScheduleDelay(node.children.get(1));
         String payload = visit(node.children.get(2));
 
         return "schedule(" + mAction.getName() + ", [" + delay + "], " + payload + ")";
+    }
+
+    private static long evaluateScheduleDelay(AstNode expression) {
+        final long delay;
+        try {
+            delay = evaluateConstant(expression);
+        } catch (ArithmeticException exception) {
+            throw new IllegalArgumentException(
+                "Scheduled action delay overflows the nanosecond range.", exception);
+        }
+        if (delay < 0) {
+            throw new IllegalArgumentException(
+                "Scheduled action delay must be greater than or equal to 0.");
+        }
+        return delay;
+    }
+
+    private static long evaluateConstant(AstNode expression) {
+        if (expression instanceof LiteralNode literal) {
+            try {
+                return Long.parseLong(literal.literal);
+            } catch (NumberFormatException exception) {
+                throw new IllegalArgumentException(
+                    "Scheduled action delays must use decimal integer literals.", exception);
+            }
+        }
+        if (expression instanceof AdditionNode addition) {
+            return Math.addExact(
+                evaluateConstant(addition.left), evaluateConstant(addition.right));
+        }
+        if (expression instanceof SubtractionNode subtraction) {
+            return Math.subtractExact(
+                evaluateConstant(subtraction.left), evaluateConstant(subtraction.right));
+        }
+        if (expression instanceof MultiplicationNode multiplication) {
+            return Math.multiplyExact(
+                evaluateConstant(multiplication.left), evaluateConstant(multiplication.right));
+        }
+        if (expression instanceof NegativeNode negative) {
+            return Math.negateExact(evaluateConstant(negative.child));
+        }
+        throw new IllegalArgumentException(
+            "Scheduled action delay must be a constant expression using decimal integers, "
+                + "arithmetic, and C time macros.");
     }
 
     //TODO: Add visitScheduleActionTokenNode to handle booleans.

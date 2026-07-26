@@ -3,12 +3,34 @@ package org.lflang.analyses.c;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import org.lflang.MessageReporter;
 import org.lflang.dsl.CBaseVisitor;
 import org.lflang.dsl.CParser.*;
 
 /** This visitor class builds an AST from the parse tree of a C program */
 public class BuildAstParseTreeVisitor extends CBaseVisitor<CAst.AstNode> {
+
+  private static final Map<String, Long> TIME_UNIT_MACROS =
+      Map.ofEntries(
+          Map.entry("NSEC", 1L),
+          Map.entry("NSECS", 1L),
+          Map.entry("USEC", 1_000L),
+          Map.entry("USECS", 1_000L),
+          Map.entry("MSEC", 1_000_000L),
+          Map.entry("MSECS", 1_000_000L),
+          Map.entry("SEC", 1_000_000_000L),
+          Map.entry("SECS", 1_000_000_000L),
+          Map.entry("SECOND", 1_000_000_000L),
+          Map.entry("SECONDS", 1_000_000_000L),
+          Map.entry("MINUTE", 60_000_000_000L),
+          Map.entry("MINUTES", 60_000_000_000L),
+          Map.entry("HOUR", 3_600_000_000_000L),
+          Map.entry("HOURS", 3_600_000_000_000L),
+          Map.entry("DAY", 86_400_000_000_000L),
+          Map.entry("DAYS", 86_400_000_000_000L),
+          Map.entry("WEEK", 604_800_000_000_000L),
+          Map.entry("WEEKS", 604_800_000_000_000L));
 
   /** Message reporter for reporting warnings and errors */
   MessageReporter messageReporter;
@@ -379,6 +401,22 @@ public class BuildAstParseTreeVisitor extends CBaseVisitor<CAst.AstNode> {
         for (AssignmentExpressionContext param : params) {
           node.children.add(visitAssignmentExpression(param));
         }
+        return node;
+      } else if (TIME_UNIT_MACROS.containsKey(varNode.name)) {
+        if (params.size() != 1) {
+          messageReporter
+              .nowhere()
+              .warning(
+                  String.join(
+                      " ",
+                      "Warning (line " + ctx.getStart().getLine() + "):",
+                      varNode.name + " must have one argument.",
+                      "Marking the function call as opaque."));
+          return new CAst.OpaqueNode();
+        }
+        CAst.MultiplicationNode node = new CAst.MultiplicationNode();
+        node.left = visitAssignmentExpression(params.get(0));
+        node.right = new CAst.LiteralNode(Long.toString(TIME_UNIT_MACROS.get(varNode.name)));
         return node;
       } else {
         // Generic pointer dereference, unanalyzable.

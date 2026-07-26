@@ -5,8 +5,13 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.List;
+import java.util.Map;
+import org.antlr.v4.runtime.CharStreams;
+import org.antlr.v4.runtime.CommonTokenStream;
 import org.junit.jupiter.api.Test;
 import org.lflang.DefaultMessageReporter;
+import org.lflang.analyses.c.BuildAstParseTreeVisitor;
+import org.lflang.analyses.c.CAst;
 import org.lflang.analyses.c.CAst.LiteralNode;
 import org.lflang.analyses.c.CAst.ScheduleActionNode;
 import org.lflang.analyses.c.CAst.SetPortNode;
@@ -14,6 +19,8 @@ import org.lflang.analyses.c.CAst.StateVarNode;
 import org.lflang.analyses.c.CAst.TriggerValueNode;
 import org.lflang.analyses.c.CAst.VariableNode;
 import org.lflang.analyses.c.CToMaudeVisitor;
+import org.lflang.dsl.CLexer;
+import org.lflang.dsl.CParser;
 import org.lflang.generator.ReactorInstance;
 import org.lflang.lf.ActionOrigin;
 import org.lflang.lf.LfFactory;
@@ -69,6 +76,85 @@ class CToMaudeVisitorTest {
     assertThrows(
         IllegalArgumentException.class,
         () -> visitor.visitStateVarNode(new StateVarNode("out")));
+  }
+
+  @Test
+  void convertsCIntervalMacrosToNanoseconds() {
+    var fixture = fixture();
+    var visitor = new CToMaudeVisitor(fixture.leftWorker);
+    Map<String, Long> macros =
+        Map.ofEntries(
+            Map.entry("NSEC", 1L),
+            Map.entry("NSECS", 1L),
+            Map.entry("USEC", 1_000L),
+            Map.entry("USECS", 1_000L),
+            Map.entry("MSEC", 1_000_000L),
+            Map.entry("MSECS", 1_000_000L),
+            Map.entry("SEC", 1_000_000_000L),
+            Map.entry("SECS", 1_000_000_000L),
+            Map.entry("SECOND", 1_000_000_000L),
+            Map.entry("SECONDS", 1_000_000_000L),
+            Map.entry("MINUTE", 60_000_000_000L),
+            Map.entry("MINUTES", 60_000_000_000L),
+            Map.entry("HOUR", 3_600_000_000_000L),
+            Map.entry("HOURS", 3_600_000_000_000L),
+            Map.entry("DAY", 86_400_000_000_000L),
+            Map.entry("DAYS", 86_400_000_000_000L),
+            Map.entry("WEEK", 604_800_000_000_000L),
+            Map.entry("WEEKS", 604_800_000_000_000L));
+
+    macros.forEach(
+        (macro, expected) ->
+            assertEquals(
+                expectedSchedule(fixture, expected),
+                visitor.visit(parse("lf_schedule_int(x, " + macro + "(1), 1);")),
+                macro));
+  }
+
+  @Test
+  void evaluatesConstantScheduleDelayArithmetic() {
+    var fixture = fixture();
+    var visitor = new CToMaudeVisitor(fixture.leftWorker);
+
+    assertEquals(
+        expectedSchedule(fixture, 42L),
+        visitor.visit(parse("lf_schedule_int(x, 42, 1);")));
+    assertEquals(
+        expectedSchedule(fixture, 1_500_000L),
+        visitor.visit(parse("lf_schedule_int(x, MSEC(1) + USEC(500), 1);")));
+  }
+
+  @Test
+  void rejectsInvalidScheduleDelays() {
+    var fixture = fixture();
+    var visitor = new CToMaudeVisitor(fixture.leftWorker);
+
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> visitor.visit(parse("lf_schedule_int(x, self->x, 1);")));
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> visitor.visit(parse("lf_schedule_int(x, 0 - 1, 1);")));
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> visitor.visit(parse("lf_schedule_int(x, WEEK(20000), 1);")));
+  }
+
+  private static String expectedSchedule(Fixture fixture, long delay) {
+    return "schedule("
+        + fixture.leftWorker.logicalActions.get(0).getName()
+        + ", ["
+        + delay
+        + "], [1])";
+  }
+
+  private static CAst.AstNode parse(String source) {
+    var lexer = new CLexer(CharStreams.fromString(source));
+    var parser = new CParser(new CommonTokenStream(lexer));
+    var result =
+        new BuildAstParseTreeVisitor(new DefaultMessageReporter()).visit(parser.blockItemList());
+    assertEquals(0, parser.getNumberOfSyntaxErrors());
+    return result;
   }
 
   private static ScheduleActionNode schedule(String actionName) {
