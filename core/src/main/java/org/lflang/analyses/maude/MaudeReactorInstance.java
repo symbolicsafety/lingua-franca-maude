@@ -26,9 +26,11 @@ public class MaudeReactorInstance {
     public final List<MaudeStateInstance> stateVars = new ArrayList<MaudeStateInstance>();
     public final List<MaudeTriggerInstance> triggers = new ArrayList<MaudeTriggerInstance>();
     public final List<MaudeReactionInstance> reactions = new ArrayList<MaudeReactionInstance>();
-    private final Map<String, String> stateNames = new HashMap<>();
+    private final Map<String, MaudeStateInstance> statesByLfName = new HashMap<>();
     private final Map<String, String> variableNames = new HashMap<>();
     private final Map<String, MaudeActionInstance> actionsByLfName = new HashMap<>();
+    private final Map<String, MaudePortInstance> portsByLfName = new HashMap<>();
+    private final Map<String, MaudeTriggerInstance> triggersByLfName = new HashMap<>();
     private boolean hasStartup = false;
 
     public boolean hasStartup() {
@@ -74,7 +76,7 @@ public class MaudeReactorInstance {
         for (var input : lfReactor.inputs) {
             var mInput = new MaudePortInstance(input, this);
             this.inPorts.add(mInput);
-            registerVariable(input.getName(), mInput.getName());
+            registerPort(input.getName(), mInput);
             this.registry.register(input, mInput);
             this.triggers.add(registerTrigger(input, mInput));
         }
@@ -82,7 +84,7 @@ public class MaudeReactorInstance {
         for (var output : lfReactor.outputs) {
             var mOutput = new MaudePortInstance(output, this);
             this.outPorts.add(mOutput);
-            registerVariable(output.getName(), mOutput.getName());
+            registerPort(output.getName(), mOutput);
             this.registry.register(output, mOutput);
             registerTrigger(output, mOutput);
         }
@@ -90,7 +92,7 @@ public class MaudeReactorInstance {
         for (var state : lfReactor.states) {
             var mState = new MaudeStateInstance(state, this);
             this.stateVars.add(mState);
-            registerState(state.getName(), mState.getName());
+            registerState(state.getName(), mState);
             this.registry.register(state, mState);
         }
 
@@ -110,7 +112,8 @@ public class MaudeReactorInstance {
     }
 
     String requireMemberName(String lfName) {
-        var result = stateNames.get(lfName);
+        var state = statesByLfName.get(lfName);
+        String result = state == null ? null : state.getName();
         if (result == null) {
             result = variableNames.get(lfName);
         }
@@ -118,16 +121,27 @@ public class MaudeReactorInstance {
     }
 
     String requireTriggerName(String lfName) {
-        return requireName(variableNames.get(lfName), "trigger", lfName);
+        return requireTrigger(lfName).getName();
+    }
+
+    public MaudeStateInstance requireState(String lfName) {
+        return require(statesByLfName, "state variable", lfName);
+    }
+
+    public MaudePortInstance requirePort(String lfName) {
+        return require(portsByLfName, "port", lfName);
+    }
+
+    public MaudeActionInstance requireAction(String lfName) {
+        return require(actionsByLfName, "action", lfName);
+    }
+
+    public MaudeTriggerInstance requireTrigger(String lfName) {
+        return require(triggersByLfName, "trigger", lfName);
     }
 
     MaudeActionInstance requirePhysicalAction(String lfName) {
-        var result = actionsByLfName.get(lfName);
-        if (result == null) {
-            throw new IllegalArgumentException(
-                "No LF action named '" + lfName + "' exists in reactor '"
-                    + lfReactor.getFullName() + "'");
-        }
+        var result = requireAction(lfName);
         if (!result.getLfAction().isPhysical()) {
             throw new IllegalArgumentException(
                 "LF action '" + lfName + "' in reactor '" + lfReactor.getFullName()
@@ -138,22 +152,24 @@ public class MaudeReactorInstance {
 
     private void registerAction(ActionInstance lfAction, MaudeActionInstance maudeAction) {
         registerVariable(lfAction.getName(), maudeAction.getName());
-        var previous = actionsByLfName.putIfAbsent(lfAction.getName(), maudeAction);
-        if (previous != null && previous != maudeAction) {
-            throw duplicateMember(lfAction.getName());
-        }
+        registerMember(actionsByLfName, lfAction.getName(), maudeAction);
     }
 
-    private void registerState(String lfName, String maudeName) {
-        registerMember(stateNames, lfName, maudeName);
+    private void registerState(String lfName, MaudeStateInstance maudeState) {
+        registerMember(statesByLfName, lfName, maudeState);
+    }
+
+    private void registerPort(String lfName, MaudePortInstance maudePort) {
+        registerVariable(lfName, maudePort.getName());
+        registerMember(portsByLfName, lfName, maudePort);
     }
 
     private void registerVariable(String lfName, String maudeName) {
         registerMember(variableNames, lfName, maudeName);
     }
 
-    private void registerMember(Map<String, String> index, String lfName, String maudeName) {
-        var previous = index.putIfAbsent(lfName, maudeName);
+    private <T> void registerMember(Map<String, T> index, String lfName, T maudeInstance) {
+        var previous = index.putIfAbsent(lfName, maudeInstance);
         if (previous != null) {
             throw duplicateMember(lfName);
         }
@@ -163,6 +179,16 @@ public class MaudeReactorInstance {
         return new IllegalStateException(
             "Multiple LF components named '" + lfName + "' exist in reactor '"
                 + lfReactor.getFullName() + "'");
+    }
+
+    private <T> T require(Map<String, T> index, String description, String lfName) {
+        var result = index.get(lfName);
+        if (result == null) {
+            throw new IllegalArgumentException(
+                "No LF " + description + " named '" + lfName + "' exists in reactor '"
+                    + lfReactor.getFullName() + "'");
+        }
+        return result;
     }
 
     private String requireName(String result, String description, String lfName) {
@@ -180,6 +206,9 @@ public class MaudeReactorInstance {
     ) {
         var result = new MaudeTriggerInstance(lfTrigger, maudeTrigger);
         this.registry.register(lfTrigger, result);
+        if (!lfTrigger.isStartup() && !lfTrigger.isShutdown() && !lfTrigger.isReset()) {
+            registerMember(triggersByLfName, lfTrigger.getName(), result);
+        }
         return result;
     }
 

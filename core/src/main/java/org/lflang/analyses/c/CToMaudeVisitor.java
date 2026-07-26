@@ -1,12 +1,5 @@
 package org.lflang.analyses.c;
 
-import java.io.IOException;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
-
-import org.eclipse.emf.ecore.resource.Resource;
-
 import org.lflang.analyses.c.CAst.AdditionNode;
 import org.lflang.analyses.c.CAst.AssignmentNode;
 import org.lflang.analyses.c.CAst.DivisionNode;
@@ -33,43 +26,13 @@ import org.lflang.analyses.c.CAst.SubtractionNode;
 import org.lflang.analyses.c.CAst.TriggerIsPresentNode;
 import org.lflang.analyses.c.CAst.TriggerValueNode;
 import org.lflang.analyses.c.CAst.VariableNode;
-import org.lflang.analyses.maude.MaudeActionInstance;
-import org.lflang.analyses.maude.MaudeGenerator;
-import org.lflang.analyses.maude.MaudePortInstance;
-import org.lflang.analyses.maude.MaudeReactionInstance;
 import org.lflang.analyses.maude.MaudeReactorInstance;
-import org.lflang.analyses.maude.MaudeStateInstance;
-import org.lflang.analyses.maude.MaudeTriggerInstance;
-import org.lflang.analyses.maude.MaudeTypes;
-import org.lflang.ast.ASTUtils;
-import org.lflang.generator.ActionInstance;
-import org.lflang.generator.CodeBuilder;
-import org.lflang.generator.LFGeneratorContext;
-import org.lflang.generator.NamedInstance;
-import org.lflang.generator.PortInstance;
-import org.lflang.generator.ReactionInstance;
-import org.lflang.generator.ReactionInstance.Runtime;
-import org.lflang.generator.ReactorInstance;
-import org.lflang.generator.StateVariableInstance;
-import org.lflang.generator.TimerInstance;
-import org.lflang.generator.TriggerInstance;
-import org.lflang.lf.Action;
 
 public class CToMaudeVisitor extends CBaseAstVisitor<String> {
-    private MaudeGenerator generator;
-    private MaudeReactionInstance reaction;
-    private MaudeReactorInstance parent;
-    /** A list of all the named instances */
-    private List<NamedInstance> instances = new ArrayList<NamedInstance>();
+    private final MaudeReactorInstance parent;
 
-    public CToMaudeVisitor(MaudeGenerator generator, MaudeReactionInstance reaction) {
-        this.generator = generator;
-        this.reaction = reaction;
-        this.parent = reaction.getParent();
-        instances.addAll(this.parent.lfReactor.inputs);
-        instances.addAll(this.parent.lfReactor.outputs);
-        instances.addAll(this.parent.lfReactor.actions);
-        instances.addAll(this.parent.lfReactor.states);
+    public CToMaudeVisitor(MaudeReactorInstance parent) {
+        this.parent = parent;
     }
 
     @Override
@@ -206,9 +169,7 @@ public class CToMaudeVisitor extends CBaseAstVisitor<String> {
     @Override
     public String visitScheduleActionNode(ScheduleActionNode node) {
         String name = ((VariableNode) node.children.get(0)).name;
-        NamedInstance instance = getInstanceByName(name);
-        ActionInstance lfAction = (ActionInstance) instance;
-        MaudeActionInstance mAction = reaction.getParent().getMaudeAction(lfAction);
+        var mAction = parent.requireAction(name);
         String additionalDelay = visit(node.children.get(1));
         Long delay = Long.parseLong(additionalDelay.replaceAll("\\[|\\]",""));
         String payload = "[" + mAction.payload.toString() + "]";
@@ -218,9 +179,7 @@ public class CToMaudeVisitor extends CBaseAstVisitor<String> {
     @Override
     public String visitScheduleActionIntNode(ScheduleActionIntNode node) {
         String name = ((VariableNode) node.children.get(0)).name;
-        NamedInstance instance = getInstanceByName(name);
-        ActionInstance lfAction = (ActionInstance) instance;
-        MaudeActionInstance mAction = parent.getMaudeAction(lfAction);
+        var mAction = parent.requireAction(name);
         String additionalDelay = visit(node.children.get(1));
         Long delay = Long.parseLong(additionalDelay.replaceAll("\\[|\\]",""));
         String payload = visit(node.children.get(2));
@@ -233,32 +192,24 @@ public class CToMaudeVisitor extends CBaseAstVisitor<String> {
 
     @Override
     public String visitSetPortNode(SetPortNode node) {
-        NamedInstance port = getInstanceByName(((VariableNode) node.left).name);
+        var port = parent.requirePort(((VariableNode) node.left).name);
         String payload = visit(node.right);
-        MaudePortInstance mPort = parent.getMaudePort((PortInstance) port);
-        return "(" + mPort.getName() + " <- " + payload + ")";
+        return "(" + port.getName() + " <- " + payload + ")";
     }
 
     @Override
     public String visitStateVarNode(StateVarNode node) {
-        NamedInstance instance = getInstanceByName(node.name);
-        MaudeStateInstance mState = parent.getMaudeStateVar((StateVariableInstance) instance);
-        return mState.getName();
+        return parent.requireState(node.name).getName();
     }
 
     @Override
     public String visitTriggerIsPresentNode(TriggerIsPresentNode node) {
-        NamedInstance instance = getInstanceByName(node.name);
-        MaudeTriggerInstance mTrigger = parent.getMaudeTrigger((TriggerInstance) instance);
-
-        return "(isPresent(" + mTrigger.getName() +"))";
+        return "(isPresent(" + parent.requireTrigger(node.name).getName() +"))";
     }
 
     @Override
     public String visitTriggerValueNode(TriggerValueNode node) {
-        NamedInstance instance = getInstanceByName(node.name);
-        MaudeTriggerInstance mTrigger = parent.getMaudeTrigger((TriggerInstance) instance);
-        return mTrigger.getName();
+        return parent.requireTrigger(node.name).getName();
     }
 
     @Override
@@ -266,9 +217,7 @@ public class CToMaudeVisitor extends CBaseAstVisitor<String> {
         if (node.type.name().equals("UNKNOWN") && (node.name.equalsIgnoreCase("true") || node.name.equalsIgnoreCase("false"))) {
             return "["+node.name.toLowerCase()+"]";
         }
-        NamedInstance instance = getInstanceByName(node.name);
-        MaudeStateInstance mState = parent.getMaudeStateVar((StateVariableInstance) instance);
-        return mState.getName();
+        return parent.requireState(node.name).getName();
     }
 
     @Override
@@ -287,22 +236,4 @@ public class CToMaudeVisitor extends CBaseAstVisitor<String> {
         return result;
     }
 
-    private NamedInstance getInstanceByName(String name) {
-        for (NamedInstance i : this.instances) {
-            if (i instanceof ActionInstance) {
-                if (((ActionInstance) i).getDefinition().getName().equals(name)) {
-                    return i;
-                }
-            } else if (i instanceof PortInstance) {
-                if (((PortInstance) i).getDefinition().getName().equals(name)) {
-                    return i;
-                }
-            } else if (i instanceof StateVariableInstance) {
-                if (((StateVariableInstance) i).getDefinition().getName().equals(name)) {
-                    return i;
-                }
-            }
-        }
-        throw new RuntimeException("NamedInstance not found!");
-    }
 }

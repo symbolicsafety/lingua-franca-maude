@@ -454,7 +454,7 @@ public class MaudeGenerator extends GeneratorBase {
                 BuildAstParseTreeVisitor buildAstVisitor = new BuildAstParseTreeVisitor(messageReporter);
                 CAst.AstNode ast = buildAstVisitor.visitBlockItemList(parseTree);
 
-                CToMaudeVisitor c2mVisitor = new CToMaudeVisitor(this, reaction);
+                CToMaudeVisitor c2mVisitor = new CToMaudeVisitor(reaction.getParent());
 
                 String output = c2mVisitor.visit(ast);
                 code.pr(output);
