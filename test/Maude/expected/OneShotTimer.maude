@@ -1,0 +1,69 @@
+---(****************************
+ * Auto-generated Maude model *
+ ******************************)---
+omod ONESHOTTIMER is
+    including LF-REPR .
+    protecting LF-VALUE-TIME .
+
+    op OneShotTimer : -> ReactorId [ctor] .
+    op OneShotTimer.m-sv.count : -> RVarId [ctor] .
+    op OneShotTimer.m-t.once : -> TimerId [ctor] .
+    op init : -> Configuration .
+
+    eq init =
+        < OneShotTimer : Reactor |
+            inports : none,
+            outports : none,
+            state :
+                ( OneShotTimer.m-sv.count |-> [0] ),
+            timers :
+                < OneShotTimer.m-t.once : Timer | offset : 1000000, period : 0 >,
+            actions : none,
+            reactions :
+                (reaction when (OneShotTimer.m-t.once) do {
+                    (OneShotTimer.m-sv.count := (OneShotTimer.m-sv.count + [1]))
+                })
+        >
+    .
+endom
+
+omod TEST-ONESHOTTIMER is
+    including ONESHOTTIMER .
+    including DYNAMICS-WITHOUT-TICK .
+
+    ops env queue rxns : -> Oid [ctor] .
+
+    op initSystem : -> GlobalSystem .
+    eq initSystem =
+        { < env : Environment |
+            physicalActions : none
+             >
+            addReactionIndices(init)
+            < queue : EventQueue | queue :
+            addInitialTimers(init, empty) >
+            < rxns : Invoked | reactions : none >} .
+endom
+
+omod ANALYSIS-ONESHOTTIMER is
+    including TEST-ONESHOTTIMER .
+    including LF-PROP-EXT .
+    including LF-SEARCH-COMMAND .
+endom
+
+omod MODELCHECKER-ONESHOTTIMER is
+    including TEST-ONESHOTTIMER .
+    including LF-OUTPUT-COUNTEREXAMPLE .
+    including LF-PROP-EXT .
+    including MODEL-CHECKER .
+endom
+
+omod SIMULATION-ONESHOTTIMER is
+    including TEST-ONESHOTTIMER .
+    including TIMED-SIMULATION-DYNAMICS .
+endom
+
+red in MODELCHECKER-ONESHOTTIMER : modelCheck(initSystem timeBound 2000000 , (<> (( (@ OneShotTimer.m-sv.count in OneShotTimer) === @ [1] ))) ) .
+
+red in MODELCHECKER-ONESHOTTIMER : modelCheck(initSystem timeBound 2000000 , ([] (( (@ OneShotTimer.m-sv.count in OneShotTimer) <= @ [1] ))) ) .
+
+quit
