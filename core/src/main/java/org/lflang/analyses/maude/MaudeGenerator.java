@@ -27,19 +27,14 @@ import org.lflang.dsl.CParser.BlockItemListContext;
 import org.lflang.dsl.LTLLexer;
 import org.lflang.dsl.LTLParser;
 import org.lflang.dsl.LTLParser.LtlContext;
-import org.lflang.generator.ActionInstance;
 import org.lflang.generator.CodeBuilder;
 import org.lflang.generator.GeneratorBase;
 import org.lflang.generator.LFGeneratorContext;
-import org.lflang.generator.NamedInstance;
 import org.lflang.generator.PortInstance;
 import org.lflang.generator.ReactorInstance;
 import org.lflang.generator.RuntimeRange;
 import org.lflang.generator.SendRange;
-import org.lflang.generator.StateVariableInstance;
 import org.lflang.generator.TargetTypes;
-import org.lflang.generator.TimerInstance;
-import org.lflang.generator.TriggerInstance;
 import org.lflang.generator.docker.DockerGenerator;
 import org.lflang.lf.AttrParm;
 import org.lflang.lf.Attribute;
@@ -59,12 +54,10 @@ public class MaudeGenerator extends GeneratorBase {
 
     public List<MaudeReactorInstance> maudeReactorInstances = new ArrayList<>();
     private List<MaudePortInstance> maudePortInstances = new ArrayList<>();
-    private List<MaudeReactionInstance> maudeReactionInstances = new ArrayList<>();
     private List<MaudeActionInstance> maudeActionInstances = new ArrayList<>();
     private List<MaudeActionInstance> maudePhysicalActionInstances = new ArrayList<>();
     private List<MaudeTimerInstance> maudeTimerInstances = new ArrayList<>();
     private List<MaudeStateInstance> maudeStateInstances = new ArrayList<>();
-    public List<MaudeTriggerInstance> maudeTriggerInstances = new ArrayList<>(); // Triggers = ports + actions + timers
 
     private List<Attribute> maudePhysActProperties;
     private List<Attribute> maudeProperties;
@@ -82,39 +75,11 @@ public class MaudeGenerator extends GeneratorBase {
 
         this.runner = new MaudeRunner(this);
     }
-    //// Public fields
-    /** A list of action instances */
-    public List<ActionInstance> actionInstances = new ArrayList<ActionInstance>();
-
-    /** Joint lists of the lists above. */
-    public List<TriggerInstance> triggerInstances; // Triggers = ports + actions + timers
-
-    public List<NamedInstance> namedInstances; // Named instances = triggers + state variables
 
     /** A list of paths to the maude files generated */
     public List<Path> generatedFiles = new ArrayList<>();
     /** The directory where the generated files are placed */
     public Path outputDir;
-
-    ////////////////////////////////////////////
-    //// Private fields
-    /** A list of reactor runtime instances. */
-    private List<ReactorInstance> reactorInstances = new ArrayList<ReactorInstance>();
-
-    /** State variables in the system */
-    private List<StateVariableInstance> stateVariables = new ArrayList<StateVariableInstance>();
-
-    /** A list of input port instances */
-    private List<PortInstance> inputInstances = new ArrayList<PortInstance>();
-
-    /** A list of output port instances */
-    private List<PortInstance> outputInstances = new ArrayList<PortInstance>();
-
-    /** A list of input AND output port instances */
-    private List<PortInstance> portInstances = new ArrayList<PortInstance>();
-
-    /** A list of timer instances */
-    private List<TimerInstance> timerInstances = new ArrayList<TimerInstance>();
 
     /** The main place to put generated code. */
     private CodeBuilder code = new CodeBuilder();
@@ -798,50 +763,25 @@ public class MaudeGenerator extends GeneratorBase {
 
     /** Populate the data structures. */
     private void populateDataStructures() {
-        // Populate lists of reactor/reaction instances,
-        // state variables, actions, ports, and timers.
         populateLists(this.main);
-
-        // Join actions, ports, and timers into a list of triggers.
-        this.triggerInstances = new ArrayList<TriggerInstance>(this.actionInstances);
-        this.triggerInstances.addAll(portInstances);
-        this.triggerInstances.addAll(timerInstances);
-
-        // Join state variables and triggers
-        this.namedInstances = new ArrayList<NamedInstance>(this.stateVariables);
-        namedInstances.addAll(this.triggerInstances);
     }
 
     private void populateLists(ReactorInstance reactor) {
-        // Reactor and reaction instances
-        this.reactorInstances.add(reactor);
-
         MaudeReactorInstance maudeReactor =
             new MaudeReactorInstance(reactor, this.maudeInstances);
         this.maudeReactorInstances.add(maudeReactor);
 
-        this.maudeReactionInstances.addAll(maudeReactor.reactions);
-
-        this.stateVariables.addAll(reactor.states);
         this.maudeStateInstances.addAll(maudeReactor.stateVars);
 
-        this.actionInstances.addAll(reactor.actions);
         this.maudeActionInstances.addAll(maudeReactor.logicalActions);
         this.maudeActionInstances.addAll(maudeReactor.physicalActions);
         this.maudePhysicalActionInstances.addAll(maudeReactor.physicalActions);
 
-        this.inputInstances.addAll(reactor.inputs);
-        this.portInstances.addAll(reactor.inputs);
         this.maudePortInstances.addAll(maudeReactor.inPorts);
 
-        this.outputInstances.addAll(reactor.outputs);
-        this.portInstances.addAll(reactor.outputs);
         this.maudePortInstances.addAll(maudeReactor.outPorts);
 
-        this.timerInstances.addAll(reactor.timers);
         this.maudeTimerInstances.addAll(maudeReactor.timers);
-
-        this.maudeTriggerInstances.addAll(maudeReactor.triggers);
 
         // Recursion
         for (var child : reactor.children) {
