@@ -15,17 +15,22 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import org.eclipse.emf.ecore.EObject;
+import org.eclipse.emf.ecore.EStructuralFeature;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.emf.ecore.resource.ResourceSet;
+import org.eclipse.lsp4j.DiagnosticSeverity;
 import org.eclipse.xtext.generator.JavaIoFileSystemAccess;
 import org.eclipse.xtext.util.CancelIndicator;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.lflang.AttributeUtils;
+import org.lflang.DefaultMessageReporter;
 import org.lflang.FileConfig;
 import org.lflang.LFRuntimeModule;
 import org.lflang.LFStandaloneSetup;
 import org.lflang.ast.ASTUtils;
+import org.lflang.generator.GeneratorArguments;
 import org.lflang.generator.GeneratorBase;
 import org.lflang.generator.LFGeneratorContext;
 import org.lflang.generator.MainContext;
@@ -187,15 +192,27 @@ class MaudeRegressionTest {
     assertTrue(resource.getErrors().isEmpty(), () -> "Could not parse " + source);
 
     fileAccess.setOutputPath(tempDir.resolve(stem(source)).resolve("src-gen").toString());
+    var reporter = new RecordingMessageReporter();
     var context =
         new MainContext(
-            LFGeneratorContext.Mode.STANDALONE, resource, fileAccess, CancelIndicator.NullImpl);
+            LFGeneratorContext.Mode.STANDALONE,
+            CancelIndicator.NullImpl,
+            (message, completion) -> {},
+            GeneratorArguments.none(),
+            resource,
+            fileAccess,
+            ignored -> reporter);
     Reactor main = ASTUtils.getMainReactor(resource).orElseThrow();
     var generator =
         new MaudeGenerator(context, attributes(main, "maude"), attributes(main, "maudePhysAct"));
     generator.doGenerate(resource, context);
 
     assertFalse(context.getErrorReporter().getErrorsOccurred(), "Maude generation reported errors");
+    if (source.getFileName().toString().equals("ActionTiming.lf")) {
+      assertTrue(
+          reporter.warnings.stream().anyMatch(message -> message.contains("currently ignores")),
+          "Positive action minimum spacing should produce an LF-Maude warning");
+    }
     return context.getFileConfig().getModelGenPath().resolve(stem(source) + ".maude");
   }
 
@@ -238,6 +255,20 @@ class MaudeRegressionTest {
   }
 
   private record VerificationHookResult(MainContext context, Path generatedModel) {}
+
+  private static final class RecordingMessageReporter extends DefaultMessageReporter {
+
+    private final List<String> warnings = new java.util.ArrayList<>();
+
+    @Override
+    protected void reportOnNode(
+        EObject node, EStructuralFeature feature, DiagnosticSeverity severity, String message) {
+      if (severity == DiagnosticSeverity.Warning) {
+        warnings.add(message);
+      }
+      super.reportOnNode(node, feature, severity, message);
+    }
+  }
 
   private static final class VerificationHookGenerator extends GeneratorBase {
 

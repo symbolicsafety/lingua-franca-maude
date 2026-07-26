@@ -1,0 +1,73 @@
+---(****************************
+ * Auto-generated Maude model *
+ ******************************)---
+omod ACTIONTIMING is
+    including LF-REPR .
+    protecting LF-VALUE-TIME .
+
+    op ActionTiming : -> ReactorId [ctor] .
+    op ActionTiming.m-sv.last : -> RVarId [ctor] .
+    op ActionTiming.m-la.step : -> RActionId [ctor] .
+    op startup : -> RActionId [ctor] .
+    op update : -> ActionPolicy [ctor] .
+    op init : -> Configuration .
+    
+    eq init = 
+        < ActionTiming : Reactor |
+            inports : none,
+            outports : none,
+            state : 
+                ( ActionTiming.m-sv.last |-> [0] ),
+            timers : none,
+            actions : 
+                < ActionTiming.m-la.step : LogicalAction | minDelay : 1000000, minSpacing : 2000000, policy : update, payload : [0] >
+                < startup : LogicalAction | minDelay : 0, minSpacing : 0, policy : defer, payload : [0] >,
+            reactions : 
+                (reaction when (startup) --> (ActionTiming.m-la.step) do {
+                    schedule(ActionTiming.m-la.step, [0], [1])
+                })
+                (reaction when (ActionTiming.m-la.step) do {
+                    (ActionTiming.m-sv.last := ActionTiming.m-la.step)
+                })
+        >
+    .
+endom
+
+omod TEST-ACTIONTIMING is
+    including ACTIONTIMING .
+    including DYNAMICS-WITHOUT-TICK .
+
+    ops env queue rxns : -> Oid [ctor] .
+
+    op initSystem : -> GlobalSystem .
+    eq initSystem =
+        { < env : Environment |
+            physicalActions : none
+             > 
+            addReactionIndices(init)
+            < queue : EventQueue | queue : 
+            addStartup(startup, init, empty) >
+            < rxns : Invoked | reactions : none >} .
+endom
+
+omod ANALYSIS-ACTIONTIMING is
+    including TEST-ACTIONTIMING .
+    including LF-PROP-EXT .
+    including LF-SEARCH-COMMAND .
+endom
+
+omod MODELCHECKER-ACTIONTIMING is
+    including TEST-ACTIONTIMING .
+    including LF-OUTPUT-COUNTEREXAMPLE .
+    including LF-PROP-EXT .
+    including MODEL-CHECKER .
+endom
+
+omod SIMULATION-ACTIONTIMING is
+    including TEST-ACTIONTIMING .
+    including TIMED-SIMULATION-DYNAMICS .
+endom
+
+red in ANALYSIS-ACTIONTIMING : search in 'ANALYSIS-ACTIONTIMING : initSystem timeBound 2000000 =>* (( (@ ActionTiming.m-sv.last in ActionTiming) === @ [1] )) .
+
+quit

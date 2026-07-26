@@ -17,17 +17,18 @@ public class MaudeTimerInstance {
 
     this.name = MaudeIdentifiers.timer(parent, lfTimer);
 
-    // TODO: Add explicit time units to Maude
-    // Our Maude implementation does not use time units.
-    // Using nanoseconds (the most granular LF time unit) everywhere is correct and trivial,
-    // but will make reading Maude's output contain large numbers whenever seconds/milliseconds are
-    // used.
-    this.offset = lfTimer.getOffset().toNanoSeconds();
-    this.period = lfTimer.getPeriod().toNanoSeconds();
-
-    if (this.offset < 0 || this.period < 0) {
-      throw new RuntimeException("Timer offset and period must be non-negative.");
-    }
+    this.offset =
+        MaudeTime.toNanoseconds(
+            lfTimer.getOffset().getMagnitude(),
+            lfTimer.getOffset().getUnit(),
+            "Timer offset",
+            true);
+    this.period =
+        MaudeTime.toNanoseconds(
+            lfTimer.getPeriod().getMagnitude(),
+            lfTimer.getPeriod().getUnit(),
+            "Timer period",
+            true);
   }
 
   public MaudeReactorInstance getParent() {

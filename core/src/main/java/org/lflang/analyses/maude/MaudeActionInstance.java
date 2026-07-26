@@ -18,15 +18,22 @@ public class MaudeActionInstance {
         this.parent = parent;
         this.name = MaudeIdentifiers.action(parent, lfAction);
 
-        this.minDelay = lfAction.getMinDelay().toNanoSeconds();
+        this.minDelay = MaudeTime.toNanoseconds(
+            lfAction.getMinDelay().getMagnitude(),
+            lfAction.getMinDelay().getUnit(),
+            "Action minimum delay",
+            true);
         if (lfAction.getMinSpacing() != null)
-            this.minSpacing = lfAction.getMinSpacing().toNanoSeconds();
+            this.minSpacing = MaudeTime.toNanoseconds(
+                lfAction.getMinSpacing().getMagnitude(),
+                lfAction.getMinSpacing().getUnit(),
+                "Action minimum spacing",
+                true);
         else {
             this.minSpacing = 0;
         }
 
-        //FIXME: for now we only support defer policy
-        this.policy = "defer";
+        this.policy = lfAction.getPolicy() == null ? "defer" : lfAction.getPolicy();
 
         if (lfAction.getDefinition().getType() != null) {
             if (lfAction.getDefinition().getType().getId().equals("bool")) {

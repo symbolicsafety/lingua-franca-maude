@@ -430,6 +430,7 @@ public class MaudeGenerator extends GeneratorBase {
             code.pr(builder.toString());
             code.indent();
             for (var logicalAction : mReactor.logicalActions) {
+                warnIfActionSpacingIsIgnored(logicalAction);
                 builder = new StringBuilder();
                 builder.append("< " + logicalAction.getName() + " : LogicalAction | minDelay : " +
                     logicalAction.minDelay + ", minSpacing : " + logicalAction.minSpacing +
@@ -437,6 +438,7 @@ public class MaudeGenerator extends GeneratorBase {
                 code.pr(builder.toString());
             }
             for (var physicalAction : mReactor.physicalActions) {
+                warnIfActionSpacingIsIgnored(physicalAction);
                 builder = new StringBuilder();
                 builder.append("< " + physicalAction.getName() + " : PhysicalAction | minDelay : " +
                     physicalAction.minDelay + ", minSpacing : " + physicalAction.minSpacing +
@@ -444,6 +446,18 @@ public class MaudeGenerator extends GeneratorBase {
                 code.pr(builder.toString());
             }
             code.unindent();
+        }
+    }
+
+    private void warnIfActionSpacingIsIgnored(MaudeActionInstance action) {
+        if (action.getLfAction() != null && action.minSpacing > 0) {
+            messageReporter
+                .at(action.getLfAction().getDefinition())
+                .warning(
+                    "LF-Maude currently ignores minimum spacing and spacing violation policy for "
+                        + "action '" + action.getLfAction().getFullName()
+                        + "'. The generated model retains both values, but verification may not "
+                        + "match LF runtime behavior.");
         }
     }
 
@@ -575,6 +589,10 @@ public class MaudeGenerator extends GeneratorBase {
     protected void generateActionVariables() {
         for (var actionVariable : this.maudeActionInstances) {
             code.pr("op "+actionVariable.getName() + " : -> " + actionVariable.getType() +" [ctor] .");
+        }
+        if (this.maudeActionInstances.stream()
+            .anyMatch(action -> "update".equals(action.policy))) {
+            code.pr("op update : -> ActionPolicy [ctor] .");
         }
     }
 
