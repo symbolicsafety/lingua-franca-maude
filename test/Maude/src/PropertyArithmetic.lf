@@ -3,6 +3,7 @@ target C
 @maude(analysis = "reachability", goal = "1 + 2 * 3 == 7")
 @maude(analysis = "reachability", goal = "8 - 3 - 2 == 3")
 @maude(analysis = "reachability", goal = "(1 + 2) * 3 == 9")
+@maude(analysis = "reachability", timeBound = 0, goal = "1 == 1")
 main reactor PropertyArithmetic {
   state unused: int = 0
 }

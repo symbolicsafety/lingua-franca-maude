@@ -63,4 +63,6 @@ red in ANALYSIS-PROPERTYARITHMETIC : search in 'ANALYSIS-PROPERTYARITHMETIC : in
 
 red in ANALYSIS-PROPERTYARITHMETIC : search in 'ANALYSIS-PROPERTYARITHMETIC : initSystem timeBound INF =>* (((@ [1] + @ [2]) * @ [3]) === (@ [9])) .
 
+red in ANALYSIS-PROPERTYARITHMETIC : search in 'ANALYSIS-PROPERTYARITHMETIC : initSystem timeBound 0 =>* ((@ [1]) === (@ [1])) .
+
 quit

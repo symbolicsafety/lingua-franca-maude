@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.lflang.TimeUnit;
 
 class MaudeTimeTest {
 
@@ -41,6 +42,14 @@ class MaudeTimeTest {
         IllegalArgumentException.class, () -> MaudeTime.toNanoseconds("0", "msec", "period"));
     assertThrows(
         IllegalArgumentException.class, () -> MaudeTime.toNanoseconds("-1", "msec", "period"));
+  }
+
+  @Test
+  void acceptsZeroWhenAllowed() {
+    assertEquals(0L, MaudeTime.toNanoseconds("0", null, "timeBound", TimeUnit.MILLI, true));
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> MaudeTime.toNanoseconds("-1", null, "timeBound", TimeUnit.MILLI, true));
   }
 
   @Test

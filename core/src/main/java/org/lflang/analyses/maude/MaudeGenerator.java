@@ -13,6 +13,7 @@ import java.util.Optional;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.eclipse.emf.ecore.resource.Resource;
+import org.lflang.TimeUnit;
 import org.lflang.analyses.c.BuildAstParseTreeVisitor;
 import org.lflang.analyses.c.CAst;
 import org.lflang.analyses.c.CToMaudeVisitor;
@@ -674,7 +675,9 @@ public class MaudeGenerator extends GeneratorBase {
                 MaudeTime.toNanoseconds(
                     timeBoundParam.get(),
                     getParam(prop, "timeBoundUnit").orElse(null),
-                    "timeBound"));
+                    "timeBound",
+                    TimeUnit.MILLI,
+                    true));
       }
 
       String rewrites = "";
