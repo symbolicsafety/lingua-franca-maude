@@ -3,7 +3,7 @@ parser grammar LTLParser;
 options { tokenVocab=LTLLexer; }
 
 ltl
-    : equivalence
+    : formula=equivalence EOF
     ;
 
 equivalence
@@ -34,7 +34,7 @@ unaryOp
 primary
     : atom=atomicProp
     | id=ID
-    | LPAREN formula=ltl RPAREN
+    | LPAREN formula=equivalence RPAREN
     ;
 
 atomicProp
@@ -44,7 +44,7 @@ atomicProp
     | lfname=ID IN reactor=qualifiedName bop=(EQ|NEQ) bval=(TRUE|FALSE)
     | reactor=qualifiedName DOT reaction=INTEGER INVOKED
     | event=EVENT LPAREN reactor=qualifiedName COMMA trigger=ID (COMMA val=(INTEGER|TRUE|FALSE))? RPAREN INQUEUE
-    | rtime=REMAININGTIME rval=INTEGER
+    | rtime=REMAININGTIME rvalue=time
     | left=sum op=relOp right=sum
     ;
 

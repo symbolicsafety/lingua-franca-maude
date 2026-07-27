@@ -1,6 +1,7 @@
 package org.lflang.analyses.maude;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
@@ -18,6 +19,15 @@ class LTLQualifiedNameParserTest {
     assertParsesCompletely("event(left.worker, tick) inQueue");
     assertParsesCompletely("left.worker.1 invoked");
     assertParsesCompletely("value in left.worker + value in right.worker > 0");
+  }
+
+  @Test
+  void rejectsTrailingInput() {
+    assertThrows(
+        IllegalArgumentException.class,
+        () ->
+            MaudePropertyParser.translate(
+                "remainingTime 1 msec trailing", new MaudeInstanceRegistry()));
   }
 
   private static void assertParsesCompletely(String expression) {

@@ -5,8 +5,6 @@ import org.lflang.TimeUnit;
 /** Converts time-valued Maude inputs to nanoseconds. */
 final class MaudeTime {
 
-  private static final String DEFAULT_UNIT = "msec";
-
   private MaudeTime() {}
 
   /**
@@ -17,6 +15,20 @@ final class MaudeTime {
    * @param parameterName The annotation parameter name, used in diagnostics.
    */
   static long toNanoseconds(String value, String unit, String parameterName) {
+    return toNanoseconds(value, unit, parameterName, TimeUnit.MILLI, false);
+  }
+
+  /**
+   * Convert a string-valued time to nanoseconds.
+   *
+   * @param value The integer magnitude.
+   * @param unit An LF time-unit alias, or {@code null} to use {@code defaultUnit}.
+   * @param parameterName The value name, used in diagnostics.
+   * @param defaultUnit The unit to use when {@code unit} is omitted.
+   * @param allowZero Whether zero is valid.
+   */
+  static long toNanoseconds(
+      String value, String unit, String parameterName, TimeUnit defaultUnit, boolean allowZero) {
     final long magnitude;
     try {
       magnitude = Long.parseLong(value);
@@ -25,23 +37,26 @@ final class MaudeTime {
           parameterName + " must be an integer, but was '" + value + "'.", exception);
     }
 
-    String effectiveUnit = unit == null ? DEFAULT_UNIT : unit;
     final TimeUnit timeUnit;
-    try {
-      timeUnit = TimeUnit.fromName(effectiveUnit);
-    } catch (IllegalArgumentException exception) {
-      throw new IllegalArgumentException(
-          "Unknown "
-              + parameterName
-              + " unit '"
-              + effectiveUnit
-              + "'. Expected one of: "
-              + String.join(", ", TimeUnit.list())
-              + ".",
-          exception);
+    if (unit == null) {
+      timeUnit = defaultUnit;
+    } else {
+      try {
+        timeUnit = TimeUnit.fromName(unit);
+      } catch (IllegalArgumentException exception) {
+        throw new IllegalArgumentException(
+            "Unknown "
+                + parameterName
+                + " unit '"
+                + unit
+                + "'. Expected one of: "
+                + String.join(", ", TimeUnit.list())
+                + ".",
+            exception);
+      }
     }
 
-    return toNanoseconds(magnitude, timeUnit, parameterName, false);
+    return toNanoseconds(magnitude, timeUnit, parameterName, allowZero);
   }
 
   /**

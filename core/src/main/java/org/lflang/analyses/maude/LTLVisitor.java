@@ -1,5 +1,6 @@
 package org.lflang.analyses.maude;
 
+import org.lflang.TimeUnit;
 import org.lflang.dsl.LTLParser;
 import org.lflang.dsl.LTLParserBaseVisitor;
 import org.lflang.generator.CodeBuilder;
@@ -16,7 +17,7 @@ public class LTLVisitor extends LTLParserBaseVisitor<String> {
 
     public String visitLtl(LTLParser.LtlContext ctx) {
         //Add "global" parentheses around entire expression
-        return "(" + visitEquivalence(ctx.equivalence()) + ")";
+        return "(" + visitEquivalence(ctx.formula) + ")";
     }
 
     public String visitEquivalence(LTLParser.EquivalenceContext ctx) {
@@ -129,7 +130,7 @@ public class LTLVisitor extends LTLParserBaseVisitor<String> {
         }
         else
             //go to equivalence instead of "global" ltl as we already have parens there
-            return "(" + visitEquivalence(ctx.formula.equivalence()) + ")";
+            return "(" + visitEquivalence(ctx.formula) + ")";
     }
 
     public String visitAtomicProp(LTLParser.AtomicPropContext ctx) {
@@ -186,8 +187,15 @@ public class LTLVisitor extends LTLParserBaseVisitor<String> {
             return ret;
         }
         else if (ctx.rtime != null) {
-            //TODO: change tval to actual timeValue
-            return ctx.rtime.getText() + " " + ctx.rval.getText();
+            String unit = ctx.rvalue.unit == null ? null : ctx.rvalue.unit.getText();
+            long nanoseconds =
+                MaudeTime.toNanoseconds(
+                    ctx.rvalue.value.getText(),
+                    unit,
+                    "remainingTime",
+                    TimeUnit.NANO,
+                    true);
+            return ctx.rtime.getText() + " " + nanoseconds;
         }
         else {
             String op = ctx.op.getText();

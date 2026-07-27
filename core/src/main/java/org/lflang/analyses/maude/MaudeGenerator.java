@@ -22,9 +22,6 @@ import org.lflang.analyses.c.CAst;
 import org.lflang.analyses.c.CToMaudeVisitor;
 import org.lflang.ast.ASTUtils;
 import org.lflang.dsl.CParser.BlockItemListContext;
-import org.lflang.dsl.LTLLexer;
-import org.lflang.dsl.LTLParser;
-import org.lflang.dsl.LTLParser.LtlContext;
 import org.lflang.generator.CodeBuilder;
 import org.lflang.generator.GeneratorBase;
 import org.lflang.generator.LFGeneratorContext;
@@ -687,13 +684,7 @@ public class MaudeGenerator extends GeneratorBase {
                 builder.append(timeBound);
 
                 builder.append(" =>"+mode+" ");
-                LTLLexer lexer = new LTLLexer(CharStreams.fromString(goal));
-                CommonTokenStream tokens = new CommonTokenStream(lexer);
-                LTLParser parser = new LTLParser(tokens);
-                LtlContext ltlCtx = parser.ltl();
-                LTLVisitor visitor = new LTLVisitor(this.maudeInstances);
-
-                String genGoal = visitor.visitLtl(ltlCtx);
+                String genGoal = MaudePropertyParser.translate(goal, this.maudeInstances);
                 builder.append(genGoal + " .");
                 emitVerboseWrappedCommand(builder.toString(), analysis, maudeVerbose);
                 code.pr("");
@@ -705,13 +696,7 @@ public class MaudeGenerator extends GeneratorBase {
                 StringBuilder builder = new StringBuilder();
                 builder.append("red in MODELCHECKER-"+this.main.getName().toUpperCase()+" : modelCheck(initSystem timeBound "+timeBound);
 
-                LTLLexer lexer = new LTLLexer(CharStreams.fromString(goal));
-                CommonTokenStream tokens = new CommonTokenStream(lexer);
-                LTLParser parser = new LTLParser(tokens);
-                LtlContext ltlCtx = parser.ltl();
-                LTLVisitor visitor = new LTLVisitor(this.maudeInstances);
-
-                String genGoal = visitor.visitLtl(ltlCtx);
+                String genGoal = MaudePropertyParser.translate(goal, this.maudeInstances);
                 builder.append(" , "+genGoal + " ) .");
                 emitVerboseWrappedCommand(builder.toString(), analysis, maudeVerbose);
                 code.pr("");
