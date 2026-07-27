@@ -57,19 +57,11 @@ time
     ;
 
 sum
-    : terms+=difference (PLUS terms+=difference)*
-    ;
-
-difference
-    : terms+=product (MINUS terms+=product)*
+    : left=product (operators+=(PLUS|MINUS) rights+=product)*
     ;
 
 product
-    : terms+=quotient (TIMES terms+=quotient)*
-    ;
-
-quotient
-    : terms+=expr (DIV terms+=expr)*
+    : left=expr (operators+=(TIMES|DIV) rights+=expr)*
     ;
 
 relOp
@@ -78,6 +70,6 @@ relOp
 
 expr
     : lfname=ID IN reactor=qualifiedName
-    | LPAREN sum RPAREN
+    | LPAREN nested=sum RPAREN
     | INTEGER
     ;

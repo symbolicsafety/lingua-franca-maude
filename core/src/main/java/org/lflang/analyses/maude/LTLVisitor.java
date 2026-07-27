@@ -221,42 +221,30 @@ public class LTLVisitor extends LTLParserBaseVisitor<String> {
             return "@ [" + ctx.INTEGER().getText() + "]";
         }
 
-        else return visitSum(ctx.sum());
+        else return "(" + visitSum(ctx.nested) + ")";
     }
 
     public String visitSum(LTLParser.SumContext ctx) {
-        StringBuilder str = new StringBuilder();
-        for (int i = 0; i < ctx.terms.size(); i++) {
-            str.append(visitDifference(ctx.terms.get(i))).append(
-                i == ctx.terms.size() - 1 ? "" : "+");
+        StringBuilder result = new StringBuilder(visitProduct(ctx.left));
+        for (int i = 0; i < ctx.operators.size(); i++) {
+            LTLParser.ProductContext right = ctx.rights.get(i);
+            String renderedRight = visitProduct(right);
+            if (!right.operators.isEmpty()) {
+                renderedRight = "(" + renderedRight + ")";
+            }
+            result.append(" ").append(ctx.operators.get(i).getText()).append(" ")
+                .append(renderedRight);
         }
-        return str.toString();
-    }
-
-    public String visitDifference(LTLParser.DifferenceContext ctx) {
-        StringBuilder str = new StringBuilder();
-        for (int i = 0; i < ctx.terms.size(); i++) {
-            str.append(visitProduct(ctx.terms.get(i))).append(
-                i == ctx.terms.size() - 1 ? "" : "-");
-        }
-        return str.toString();
+        return result.toString();
     }
 
     public String visitProduct(LTLParser.ProductContext ctx) {
-        StringBuilder str = new StringBuilder();
-        for (int i = 0; i < ctx.terms.size(); i++) {
-            str.append(visitQuotient(ctx.terms.get(i))).append(
-                i == ctx.terms.size() - 1 ? "" : "*");
+        StringBuilder result = new StringBuilder(visitExpr(ctx.left));
+        for (int i = 0; i < ctx.operators.size(); i++) {
+            result.append(" ").append(ctx.operators.get(i).getText()).append(" ")
+                .append(visitExpr(ctx.rights.get(i)));
         }
-        return str.toString();
-    }
-    public String visitQuotient(LTLParser.QuotientContext ctx) {
-        StringBuilder str = new StringBuilder();
-        for (int i = 0; i < ctx.terms.size(); i++) {
-            str.append(visitExpr(ctx.terms.get(i))).append(
-                i == ctx.terms.size() - 1 ? "" : "/");
-        }
-        return str.toString();
+        return result.toString();
     }
 
 }
