@@ -242,6 +242,8 @@ public class MaudeGenerator extends GeneratorBase {
                 String vals = getParam(match, "vals").orElseThrow(
                     () -> new IllegalArgumentException("Attribute 'vals' missing for physicalAction property "+getParam(match, "name").orElse("") )
                 );
+                MaudePhysicalActionValues.requireCompatible(
+                    vals, act.type, act.lfAction.getName());
 
                 long period =
                     MaudeTime.toNanoseconds(
