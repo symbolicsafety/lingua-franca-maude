@@ -2,18 +2,18 @@ package org.lflang.analyses.maude;
 
 public class MaudeTypes {
 
-    public enum MaudeVarType {
-        RVarId,
-        BVarId,
-    }
+  public enum MaudeVarType {
+    RVarId,
+    BVarId,
+  }
 
-    public enum MaudePortType {
-        RPortId,
-        BPortId,
-    }
+  public enum MaudePortType {
+    RPortId,
+    BPortId,
+  }
 
-    public enum MaudeActionType {
-        RActionId,
-        BActionId,
-    }
+  public enum MaudeActionType {
+    RActionId,
+    BActionId,
+  }
 }
