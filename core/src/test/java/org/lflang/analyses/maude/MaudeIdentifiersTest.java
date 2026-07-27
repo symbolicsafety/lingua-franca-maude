@@ -21,9 +21,7 @@ class MaudeIdentifiersTest {
 
   @Test
   void qualifiesReactorNamesByHierarchy() {
-    assertEquals(
-        "Main.left.workerZuone",
-        MaudeIdentifiers.reactorPath("Main.left.worker_one"));
+    assertEquals("Main.left.workerZuone", MaudeIdentifiers.reactorPath("Main.left.worker_one"));
     assertNotEquals(
         MaudeIdentifiers.reactorPath("Main.left.worker"),
         MaudeIdentifiers.reactorPath("Main.worker"));

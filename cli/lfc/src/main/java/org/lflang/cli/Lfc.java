@@ -112,12 +112,15 @@ public class Lfc extends CliBase {
       arity = "0..1",
       fallbackValue = "all",
       description =
-          "Enable Maude verbosity in generated analyses. Accepted values: ${COMPLETION-CANDIDATES}.")
+          "Enable Maude verbosity in generated analyses. Accepted values:"
+              + " ${COMPLETION-CANDIDATES}.")
   private MaudeVerbose maudeVerbose;
 
   @Option(
       names = "--maude-verbose-file",
-      description = "Redirect Maude stderr to the given file when invoking Maude. Used in conjunction with --maude-verbose, which writes verbose messages to stderr.")
+      description =
+          "Redirect Maude stderr to the given file when invoking Maude. Used in conjunction with"
+              + " --maude-verbose, which writes verbose messages to stderr.")
   private Path maudeVerboseFile;
 
   @Option(

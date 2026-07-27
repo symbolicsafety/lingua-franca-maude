@@ -34,8 +34,7 @@ class MaudePhysicalActionResolutionTest {
         fixture.leftWorker.stateVars.get(0).getName(),
         fixture.leftWorker.requireMemberName("physicalAction"));
     assertEquals(
-        fixture.leftAction.getName(),
-        fixture.leftWorker.requireTriggerName("physicalAction"));
+        fixture.leftAction.getName(), fixture.leftWorker.requireTriggerName("physicalAction"));
   }
 
   @Test
@@ -135,10 +134,7 @@ class MaudePhysicalActionResolutionTest {
   }
 
   private static ReactorInstance reactorInstance(
-      String name,
-      Reactor reactorClass,
-      ReactorInstance parent,
-      DefaultMessageReporter reporter) {
+      String name, Reactor reactorClass, ReactorInstance parent, DefaultMessageReporter reporter) {
     var definition = FACTORY.createInstantiation();
     definition.setName(name);
     definition.setReactorClass(reactorClass);

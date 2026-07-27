@@ -69,15 +69,11 @@ final class HierarchyNameIndex<T> {
 
     var localMatches = localNames.get(reference);
     if (localMatches == null) {
-      throw new IllegalArgumentException(
-          "No " + description + " matches '" + reference + "'");
+      throw new IllegalArgumentException("No " + description + " matches '" + reference + "'");
     }
     if (localMatches.size() > 1) {
       String matches =
-          localMatches.stream()
-              .map(canonicalNames::get)
-              .sorted()
-              .collect(Collectors.joining(", "));
+          localMatches.stream().map(canonicalNames::get).sorted().collect(Collectors.joining(", "));
       throw new IllegalArgumentException(
           "Ambiguous " + description + " reference '" + reference + "'. Matches: " + matches);
     }

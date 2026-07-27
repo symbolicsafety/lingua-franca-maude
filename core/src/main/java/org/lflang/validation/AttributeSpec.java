@@ -236,26 +236,26 @@ public class AttributeSpec {
                 new AttrParamSpec("spec", AttrParamType.STRING, false),
                 new AttrParamSpec("CT", AttrParamType.INT, true),
                 new AttrParamSpec("expect", AttrParamType.BOOLEAN, true))));
-      ATTRIBUTE_SPECS_BY_NAME.put(
-          "maudePhysAct",
-          new AttributeSpec(
-              List.of(
-                  new AttrParamSpec("inReactor", AttrParamType.STRING, false),
-                  new AttrParamSpec("name", AttrParamType.STRING, false),
-                  new AttrParamSpec("vals", AttrParamType.STRING, false),
-                  new AttrParamSpec("period", AttrParamType.INT, false),
-                  new AttrParamSpec("periodUnit", AttrParamType.STRING, true),
-                  new AttrParamSpec("timeNonDet", AttrParamType.BOOLEAN, true))));
-      ATTRIBUTE_SPECS_BY_NAME.put(
-          "maude",
-          new AttributeSpec(
-              List.of(
-                  new AttrParamSpec("analysis", AttrParamType.STRING, false),
-                  new AttrParamSpec("timeBound", AttrParamType.INT, true),
-                  new AttrParamSpec("timeBoundUnit", AttrParamType.STRING, true),
-                  new AttrParamSpec("goal", AttrParamType.STRING, true),
-                  new AttrParamSpec("rewrites", AttrParamType.INT, true),
-                  new AttrParamSpec("type", AttrParamType.STRING, true))));
+    ATTRIBUTE_SPECS_BY_NAME.put(
+        "maudePhysAct",
+        new AttributeSpec(
+            List.of(
+                new AttrParamSpec("inReactor", AttrParamType.STRING, false),
+                new AttrParamSpec("name", AttrParamType.STRING, false),
+                new AttrParamSpec("vals", AttrParamType.STRING, false),
+                new AttrParamSpec("period", AttrParamType.INT, false),
+                new AttrParamSpec("periodUnit", AttrParamType.STRING, true),
+                new AttrParamSpec("timeNonDet", AttrParamType.BOOLEAN, true))));
+    ATTRIBUTE_SPECS_BY_NAME.put(
+        "maude",
+        new AttributeSpec(
+            List.of(
+                new AttrParamSpec("analysis", AttrParamType.STRING, false),
+                new AttrParamSpec("timeBound", AttrParamType.INT, true),
+                new AttrParamSpec("timeBoundUnit", AttrParamType.STRING, true),
+                new AttrParamSpec("goal", AttrParamType.STRING, true),
+                new AttrParamSpec("rewrites", AttrParamType.INT, true),
+                new AttrParamSpec("type", AttrParamType.STRING, true))));
     ATTRIBUTE_SPECS_BY_NAME.put("_c_body", new AttributeSpec(null));
     ATTRIBUTE_SPECS_BY_NAME.put(
         "_tpoLevel",

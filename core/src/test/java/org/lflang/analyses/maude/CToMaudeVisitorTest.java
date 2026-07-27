@@ -42,9 +42,7 @@ class CToMaudeVisitorTest {
         fixture.leftWorker.logicalActions.get(0).getName(),
         visitor.visitTriggerValueNode(new TriggerValueNode("x")));
     assertEquals(
-        "schedule("
-            + fixture.leftWorker.logicalActions.get(0).getName()
-            + ", [0], [0])",
+        "schedule(" + fixture.leftWorker.logicalActions.get(0).getName() + ", [0], [0])",
         visitor.visitScheduleActionNode(schedule("x")));
   }
 
@@ -74,8 +72,7 @@ class CToMaudeVisitorTest {
         "(" + fixture.leftWorker.outPorts.get(0).getName() + " <- [1])",
         visitor.visitSetPortNode(setPort));
     assertThrows(
-        IllegalArgumentException.class,
-        () -> visitor.visitStateVarNode(new StateVarNode("out")));
+        IllegalArgumentException.class, () -> visitor.visitStateVarNode(new StateVarNode("out")));
   }
 
   @Test
@@ -117,8 +114,7 @@ class CToMaudeVisitorTest {
     var visitor = new CToMaudeVisitor(fixture.leftWorker);
 
     assertEquals(
-        expectedSchedule(fixture, 42L),
-        visitor.visit(parse("lf_schedule_int(x, 42, 1);")));
+        expectedSchedule(fixture, 42L), visitor.visit(parse("lf_schedule_int(x, 42, 1);")));
     assertEquals(
         expectedSchedule(fixture, 1_500_000L),
         visitor.visit(parse("lf_schedule_int(x, MSEC(1) + USEC(500), 1);")));
@@ -214,17 +210,12 @@ class CToMaudeVisitorTest {
   }
 
   private static ReactorInstance reactorInstance(
-      String name,
-      Reactor reactorClass,
-      ReactorInstance parent,
-      DefaultMessageReporter reporter) {
+      String name, Reactor reactorClass, ReactorInstance parent, DefaultMessageReporter reporter) {
     var definition = FACTORY.createInstantiation();
     definition.setName(name);
     definition.setReactorClass(reactorClass);
     return new ReactorInstance(definition, parent, reporter, -1, List.of());
   }
 
-  private record Fixture(
-      MaudeReactorInstance leftWorker,
-      MaudeReactorInstance rightWorker) {}
+  private record Fixture(MaudeReactorInstance leftWorker, MaudeReactorInstance rightWorker) {}
 }

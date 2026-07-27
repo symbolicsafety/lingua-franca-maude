@@ -92,16 +92,15 @@ final class MaudeIdentifiers {
     return result.toString();
   }
 
-  private static String member(
-      MaudeReactorInstance parent, String namespace, String lfIdentifier) {
+  private static String member(MaudeReactorInstance parent, String namespace, String lfIdentifier) {
     Objects.requireNonNull(parent);
     return parent.getName() + "." + namespace + "." + encodeIdentifier(lfIdentifier);
   }
 
   /**
-   * Encode one LF name component injectively. {@code Z} is the escape marker, {@code Zu}
-   * represents an underscore, and {@code ZZ} represents a literal uppercase Z. Other
-   * non-alphanumeric UTF-16 code units use {@code Zxhhhh}.
+   * Encode one LF name component injectively. {@code Z} is the escape marker, {@code Zu} represents
+   * an underscore, and {@code ZZ} represents a literal uppercase Z. Other non-alphanumeric UTF-16
+   * code units use {@code Zxhhhh}.
    */
   private static void appendEncodedComponent(
       StringBuilder result, String identifier, int start, int end) {
