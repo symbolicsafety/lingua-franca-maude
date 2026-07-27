@@ -14,29 +14,22 @@ reactor Branch {
 }
 
 @maudePhysAct(
-  inReactor="left.sensor",
-  name="sample",
-  vals="0 .. 1",
-  period=1,
-  timeNonDet=false
-)
+    inReactor = "left.sensor",
+    name = "sample",
+    vals = "0 .. 1",
+    period = 1,
+    timeNonDet = false)
 @maudePhysAct(
-  inReactor="NestedPhysicalActions.right.sensor",
-  name="sample",
-  vals="0 .. 1",
-  period=1,
-  timeNonDet=false
-)
+    inReactor = "NestedPhysicalActions.right.sensor",
+    name = "sample",
+    vals = "0 .. 1",
+    period = 1,
+    timeNonDet = false)
+@maude(analysis = "ltl", timeBound = 2, goal = "[] (last in left.sensor >= 0)")
 @maude(
-  analysis="ltl",
-  timeBound=2,
-  goal="[] (last in left.sensor >= 0)"
-)
-@maude(
-  analysis="ltl",
-  timeBound=2,
-  goal="[] (last in NestedPhysicalActions.right.sensor >= 0)"
-)
+    analysis = "ltl",
+    timeBound = 2,
+    goal = "[] (last in NestedPhysicalActions.right.sensor >= 0)")
 main reactor NestedPhysicalActions {
   left = new Branch()
   right = new Branch()

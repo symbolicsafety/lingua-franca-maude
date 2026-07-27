@@ -1,10 +1,6 @@
 target C
 
-@maude(
-  analysis="reachability",
-  timeBound=2,
-  goal="last in ActionTiming == 1"
-)
+@maude(analysis = "reachability", timeBound = 2, goal = "last in ActionTiming == 1")
 main reactor ActionTiming {
   state last: int = 0
   logical action step(1000 usec, 2 msec, "update"): int

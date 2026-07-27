@@ -1,18 +1,13 @@
 target C
 
 @maudePhysAct(
-  inReactor="MainPhysicalAction",
-  name="sample",
-  vals="0 .. 1",
-  period=1000,
-  periodUnit="usec",
-  timeNonDet=false
-)
-@maude(
-  analysis="reachability",
-  timeBound=2,
-  goal="last in MainPhysicalAction == 1"
-)
+    inReactor = "MainPhysicalAction",
+    name = "sample",
+    vals = "0 .. 1",
+    period = 1000,
+    periodUnit = "usec",
+    timeNonDet = false)
+@maude(analysis = "reachability", timeBound = 2, goal = "last in MainPhysicalAction == 1")
 main reactor MainPhysicalAction {
   state last: int = 0
   physical action sample: int

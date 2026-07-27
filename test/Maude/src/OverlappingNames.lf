@@ -15,14 +15,10 @@ reactor Worker {
   =}
 }
 
+@maude(analysis = "ltl", goal = "[] (shared in worker >= 0)")
 @maude(
-  analysis="ltl",
-  goal="[] (shared in worker >= 0)"
-)
-@maude(
-  analysis="ltl",
-  goal="[] ((event(worker, shared) inQueue) -> (event(worker, shared) inQueue))"
-)
+    analysis = "ltl",
+    goal = "[] ((event(worker, shared) inQueue) -> (event(worker, shared) inQueue))")
 main reactor OverlappingNames {
   worker = new Worker()
 }

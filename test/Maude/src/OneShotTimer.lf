@@ -1,16 +1,11 @@
 target C
 
 @maude(
-  analysis="ltl",
-  timeBound=2000,
-  timeBoundUnit="usec",
-  goal="<> (count in OneShotTimer == 1)"
-)
-@maude(
-  analysis="ltl",
-  timeBound=2,
-  goal="[] (count in OneShotTimer <= 1)"
-)
+    analysis = "ltl",
+    timeBound = 2000,
+    timeBoundUnit = "usec",
+    goal = "<> (count in OneShotTimer == 1)")
+@maude(analysis = "ltl", timeBound = 2, goal = "[] (count in OneShotTimer <= 1)")
 main reactor OneShotTimer {
   state count: int = 0
   timer once(1 msec)

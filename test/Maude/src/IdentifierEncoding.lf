@@ -26,22 +26,10 @@ reactor EncodedNames {
   =}
 }
 
-@maude(
-  analysis="ltl",
-  goal="[] (a_b in worker_one >= 0)"
-)
-@maude(
-  analysis="ltl",
-  goal="[] (ab in workerone >= 0)"
-)
-@maude(
-  analysis="ltl",
-  goal="[] (aZub in workerZuone >= 0)"
-)
-@maude(
-  analysis="ltl",
-  goal="[] (m_sv in m_sv >= 0)"
-)
+@maude(analysis = "ltl", goal = "[] (a_b in worker_one >= 0)")
+@maude(analysis = "ltl", goal = "[] (ab in workerone >= 0)")
+@maude(analysis = "ltl", goal = "[] (aZub in workerZuone >= 0)")
+@maude(analysis = "ltl", goal = "[] (m_sv in m_sv >= 0)")
 main reactor IdentifierEncoding {
   worker_one = new EncodedNames()
   workerone = new EncodedNames()

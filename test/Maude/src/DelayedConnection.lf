@@ -17,11 +17,7 @@ reactor Sink {
   =}
 }
 
-@maude(
-  analysis="reachability",
-  timeBound=2,
-  goal="last in sink == 1"
-)
+@maude(analysis = "reachability", timeBound = 2, goal = "last in sink == 1")
 main reactor DelayedConnection {
   source = new Source()
   sink = new Sink()

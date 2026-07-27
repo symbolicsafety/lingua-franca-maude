@@ -1,20 +1,8 @@
 target C
 
-@maude(
-  analysis="ltl",
-  timeBound=3,
-  goal="<> (count in MainReactorComponents == 2)"
-)
-@maude(
-  analysis="reachability",
-  timeBound=3,
-  goal="count in MainReactorComponents == 2"
-)
-@maude(
-  analysis="simulation",
-  timeBound=3,
-  rewrites=6
-)
+@maude(analysis = "ltl", timeBound = 3, goal = "<> (count in MainReactorComponents == 2)")
+@maude(analysis = "reachability", timeBound = 3, goal = "count in MainReactorComponents == 2")
+@maude(analysis = "simulation", timeBound = 3, rewrites = 6)
 main reactor MainReactorComponents {
   state count: int = 0
   logical action step: int

@@ -30,16 +30,8 @@ reactor Branch {
   leaf.out -> out
 }
 
-@maude(
-  analysis="ltl",
-  timeBound=2,
-  goal="[] (count in left.leaf >= 0)"
-)
-@maude(
-  analysis="ltl",
-  timeBound=2,
-  goal="[] (count in NestedHierarchy.right.leaf >= 0)"
-)
+@maude(analysis = "ltl", timeBound = 2, goal = "[] (count in left.leaf >= 0)")
+@maude(analysis = "ltl", timeBound = 2, goal = "[] (count in NestedHierarchy.right.leaf >= 0)")
 main reactor NestedHierarchy {
   left = new Branch()
   right = new Branch()

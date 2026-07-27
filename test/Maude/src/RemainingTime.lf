@@ -1,25 +1,9 @@
 target C
 
-@maude(
-  analysis="reachability",
-  timeBound=2,
-  goal="remainingTime 1 msec"
-)
-@maude(
-  analysis="reachability",
-  timeBound=2,
-  goal="remainingTime 1000000"
-)
-@maude(
-  analysis="ltl",
-  timeBound=2,
-  goal="[] (~ (remainingTime 1))"
-)
-@maude(
-  analysis="ltl",
-  timeBound=2,
-  goal="<> (remainingTime 0 sec)"
-)
+@maude(analysis = "reachability", timeBound = 2, goal = "remainingTime 1 msec")
+@maude(analysis = "reachability", timeBound = 2, goal = "remainingTime 1000000")
+@maude(analysis = "ltl", timeBound = 2, goal = "[] (~ (remainingTime 1))")
+@maude(analysis = "ltl", timeBound = 2, goal = "<> (remainingTime 0 sec)")
 main reactor RemainingTime {
   state ticks: int = 0
   timer tick(0, 1 msec)
