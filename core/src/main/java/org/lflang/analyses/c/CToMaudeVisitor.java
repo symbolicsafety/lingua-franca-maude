@@ -30,253 +30,251 @@ import org.lflang.analyses.c.CAst.VariableNode;
 import org.lflang.analyses.maude.MaudeReactorInstance;
 
 public class CToMaudeVisitor extends CBaseAstVisitor<String> {
-    private final MaudeReactorInstance parent;
+  private final MaudeReactorInstance parent;
 
-    public CToMaudeVisitor(MaudeReactorInstance parent) {
-        this.parent = parent;
+  public CToMaudeVisitor(MaudeReactorInstance parent) {
+    this.parent = parent;
+  }
+
+  @Override
+  public String visitAdditionNode(AdditionNode node) {
+    String lhs = visit(node.left);
+    String rhs = visit(node.right);
+
+    return "(" + lhs + " + " + rhs + ")";
+  }
+
+  @Override
+  public String visitSubtractionNode(SubtractionNode node) {
+    String lhs = visit(node.left);
+    String rhs = visit(node.right);
+    return "(" + lhs + " - " + rhs + ")";
+  }
+
+  @Override
+  public String visitAssignmentNode(AssignmentNode node) {
+    String lhs = visit(node.left);
+    String rhs = visit(node.right);
+    return "(" + lhs + " := " + rhs + ")";
+  }
+
+  @Override
+  public String visitDivisionNode(DivisionNode node) {
+    String lhs = visit(node.left);
+    String rhs = visit(node.right);
+    throw new RuntimeException("Division not yet implemented in Maude");
+    // return lhs + " / " + rhs;
+  }
+
+  @Override
+  public String visitEqualNode(EqualNode node) {
+    String lhs = visit(node.left);
+    String rhs = visit(node.right);
+    return "(" + lhs + " === " + rhs + ")";
+  }
+
+  @Override
+  public String visitNotEqualNode(NotEqualNode node) {
+    String lhs = visit(node.left);
+    String rhs = visit(node.right);
+    return "(" + lhs + " ==/= " + rhs + ")";
+  }
+
+  @Override
+  public String visitGreaterEqualNode(GreaterEqualNode node) {
+    String lhs = visit(node.left);
+    String rhs = visit(node.right);
+    return "(" + lhs + " >= " + rhs + ")";
+  }
+
+  @Override
+  public String visitGreaterThanNode(GreaterThanNode node) {
+    String lhs = visit(node.left);
+    String rhs = visit(node.right);
+    return "(" + lhs + " > " + rhs + ")";
+  }
+
+  @Override
+  public String visitLessEqualNode(LessEqualNode node) {
+    String lhs = visit(node.left);
+    String rhs = visit(node.right);
+    return "(" + lhs + " <= " + rhs + ")";
+  }
+
+  @Override
+  public String visitLessThanNode(LessThanNode node) {
+    String lhs = visit(node.left);
+    String rhs = visit(node.right);
+    return "(" + lhs + " < " + rhs + ")";
+  }
+
+  @Override
+  public String visitIfBlockNode(IfBlockNode node) {
+    String antecedent = visit(node.left);
+    String consequent = visit(((IfBodyNode) node.right).left);
+    String alternative = "";
+    if (((IfBodyNode) node.right).right != null)
+      alternative = visit(((IfBodyNode) node.right).right);
+    if (alternative != "") {
+      return "if (" + antecedent + ") then (" + consequent + ") else (" + alternative + ") fi";
     }
+    return "if (" + antecedent + ") then (" + consequent + ") fi";
+  }
 
-    @Override
-    public String visitAdditionNode(AdditionNode node) {
-        String lhs = visit(node.left);
-        String rhs = visit(node.right);
+  // Does not get called
+  //    @Override
+  //    public String visitIfBodyNode(IfBodyNode node) {
+  //        String then = visit(node.left);
+  //        String else_ = visit(((IfBodyNode)node.right).left);
+  //        return "then ( " + then + " ) else ( " + else_ + " )";
+  //    }
 
-        return "(" + lhs + " + " + rhs + ")";
+  @Override
+  public String visitLiteralNode(LiteralNode node) {
+    return "[" + node.literal + "]";
+  }
+
+  @Override
+  public String visitLogicalAndNode(LogicalAndNode node) {
+    String lhs = visit(node.left);
+    String rhs = visit(node.right);
+    return "(" + lhs + ") && (" + rhs + ")";
+  }
+
+  @Override
+  public String visitLogicalOrNode(LogicalOrNode node) {
+    String lhs = visit(node.left);
+    String rhs = visit(node.right);
+    return "(" + lhs + " || " + rhs + ")";
+  }
+
+  @Override
+  public String visitLogicalNotNode(LogicalNotNode node) {
+    return "( ! " + visit(node.child) + ") ";
+  }
+
+  @Override
+  public String visitMultiplicationNode(MultiplicationNode node) {
+    String lhs = visit(node.left);
+    String rhs = visit(node.right);
+    return "(" + lhs + " * " + rhs + ")";
+  }
+
+  @Override
+  public String visitNegativeNode(NegativeNode node) {
+    if (node.child instanceof LiteralNode _clit) return "[-" + _clit.literal + "]";
+    throw new RuntimeException(
+        "Negative node not yet implemented in Maude for anything other than literals.");
+  }
+
+  @Override
+  public String visitScheduleActionNode(ScheduleActionNode node) {
+    String name = ((VariableNode) node.children.get(0)).name;
+    var mAction = parent.requireAction(name);
+    long delay = evaluateScheduleDelay(node.children.get(1));
+    String payload = "[" + mAction.payload.toString() + "]";
+    return "schedule(" + mAction.getName() + ", [" + delay + "], " + payload + ")";
+  }
+
+  @Override
+  public String visitScheduleActionIntNode(ScheduleActionIntNode node) {
+    String name = ((VariableNode) node.children.get(0)).name;
+    var mAction = parent.requireAction(name);
+    long delay = evaluateScheduleDelay(node.children.get(1));
+    String payload = visit(node.children.get(2));
+
+    return "schedule(" + mAction.getName() + ", [" + delay + "], " + payload + ")";
+  }
+
+  private static long evaluateScheduleDelay(AstNode expression) {
+    final long delay;
+    try {
+      delay = evaluateConstant(expression);
+    } catch (ArithmeticException exception) {
+      throw new IllegalArgumentException(
+          "Scheduled action delay overflows the nanosecond range.", exception);
     }
-
-    @Override
-    public String visitSubtractionNode(SubtractionNode node) {
-        String lhs = visit(node.left);
-        String rhs = visit(node.right);
-        return "(" + lhs + " - " + rhs + ")";
+    if (delay < 0) {
+      throw new IllegalArgumentException(
+          "Scheduled action delay must be greater than or equal to 0.");
     }
+    return delay;
+  }
 
-    @Override
-    public String visitAssignmentNode(AssignmentNode node) {
-        String lhs = visit(node.left);
-        String rhs = visit(node.right);
-        return "(" + lhs + " := " + rhs + ")";
-    }
-
-    @Override
-    public String visitDivisionNode(DivisionNode node) {
-        String lhs = visit(node.left);
-        String rhs = visit(node.right);
-        throw new RuntimeException("Division not yet implemented in Maude");
-        //return lhs + " / " + rhs;
-    }
-
-    @Override
-    public String visitEqualNode(EqualNode node) {
-        String lhs = visit(node.left);
-        String rhs = visit(node.right);
-        return "(" + lhs + " === " + rhs + ")";
-    }
-
-    @Override
-    public String visitNotEqualNode(NotEqualNode node) {
-        String lhs = visit(node.left);
-        String rhs = visit(node.right);
-        return "(" +  lhs + " ==/= " + rhs + ")";
-    }
-
-    @Override
-    public String visitGreaterEqualNode(GreaterEqualNode node) {
-        String lhs = visit(node.left);
-        String rhs = visit(node.right);
-        return "(" +  lhs + " >= " + rhs + ")";
-    }
-
-    @Override
-    public String visitGreaterThanNode(GreaterThanNode node) {
-        String lhs = visit(node.left);
-        String rhs = visit(node.right);
-        return "(" + lhs + " > " + rhs + ")";
-    }
-
-    @Override
-    public String visitLessEqualNode(LessEqualNode node) {
-        String lhs = visit(node.left);
-        String rhs = visit(node.right);
-        return "(" + lhs + " <= " + rhs + ")";
-    }
-
-    @Override
-    public String visitLessThanNode(LessThanNode node) {
-        String lhs = visit(node.left);
-        String rhs = visit(node.right);
-        return "(" + lhs + " < " + rhs +")";
-    }
-
-    @Override
-    public String visitIfBlockNode(IfBlockNode node) {
-        String antecedent = visit(node.left);
-        String consequent = visit(((IfBodyNode)node.right).left);
-        String alternative = "";
-        if (((IfBodyNode)node.right).right != null)
-            alternative = visit(((IfBodyNode)node.right).right);
-        if (alternative != ""){
-            return "if (" + antecedent + ") then (" + consequent + ") else (" + alternative +  ") fi";
-        }
-        return "if (" + antecedent + ") then (" + consequent + ") fi";
-    }
-
-    // Does not get called
-//    @Override
-//    public String visitIfBodyNode(IfBodyNode node) {
-//        String then = visit(node.left);
-//        String else_ = visit(((IfBodyNode)node.right).left);
-//        return "then ( " + then + " ) else ( " + else_ + " )";
-//    }
-
-    @Override
-    public String visitLiteralNode(LiteralNode node) {
-        return "[" + node.literal + "]";
-    }
-
-    @Override
-    public String visitLogicalAndNode(LogicalAndNode node) {
-        String lhs = visit(node.left);
-        String rhs = visit(node.right);
-        return "(" + lhs + ") && (" + rhs + ")";
-    }
-
-    @Override
-    public String visitLogicalOrNode(LogicalOrNode node) {
-        String lhs = visit(node.left);
-        String rhs = visit(node.right);
-        return "(" + lhs + " || " + rhs + ")";
-    }
-
-    @Override
-    public String visitLogicalNotNode(LogicalNotNode node) {
-        return "( ! " + visit(node.child) + ") ";
-    }
-
-    @Override
-    public String visitMultiplicationNode(MultiplicationNode node) {
-        String lhs = visit(node.left);
-        String rhs = visit(node.right);
-        return "(" + lhs + " * " + rhs + ")";
-    }
-
-    @Override
-    public String visitNegativeNode(NegativeNode node) {
-        if (node.child instanceof LiteralNode _clit)
-            return "[-" + _clit.literal + "]";
-        throw new RuntimeException("Negative node not yet implemented in Maude for anything other than literals.");
-    }
-
-    @Override
-    public String visitScheduleActionNode(ScheduleActionNode node) {
-        String name = ((VariableNode) node.children.get(0)).name;
-        var mAction = parent.requireAction(name);
-        long delay = evaluateScheduleDelay(node.children.get(1));
-        String payload = "[" + mAction.payload.toString() + "]";
-        return "schedule(" + mAction.getName() + ", [" + delay + "], " + payload + ")";
-    }
-
-    @Override
-    public String visitScheduleActionIntNode(ScheduleActionIntNode node) {
-        String name = ((VariableNode) node.children.get(0)).name;
-        var mAction = parent.requireAction(name);
-        long delay = evaluateScheduleDelay(node.children.get(1));
-        String payload = visit(node.children.get(2));
-
-        return "schedule(" + mAction.getName() + ", [" + delay + "], " + payload + ")";
-    }
-
-    private static long evaluateScheduleDelay(AstNode expression) {
-        final long delay;
-        try {
-            delay = evaluateConstant(expression);
-        } catch (ArithmeticException exception) {
-            throw new IllegalArgumentException(
-                "Scheduled action delay overflows the nanosecond range.", exception);
-        }
-        if (delay < 0) {
-            throw new IllegalArgumentException(
-                "Scheduled action delay must be greater than or equal to 0.");
-        }
-        return delay;
-    }
-
-    private static long evaluateConstant(AstNode expression) {
-        if (expression instanceof LiteralNode literal) {
-            try {
-                return Long.parseLong(literal.literal);
-            } catch (NumberFormatException exception) {
-                throw new IllegalArgumentException(
-                    "Scheduled action delays must use decimal integer literals.", exception);
-            }
-        }
-        if (expression instanceof AdditionNode addition) {
-            return Math.addExact(
-                evaluateConstant(addition.left), evaluateConstant(addition.right));
-        }
-        if (expression instanceof SubtractionNode subtraction) {
-            return Math.subtractExact(
-                evaluateConstant(subtraction.left), evaluateConstant(subtraction.right));
-        }
-        if (expression instanceof MultiplicationNode multiplication) {
-            return Math.multiplyExact(
-                evaluateConstant(multiplication.left), evaluateConstant(multiplication.right));
-        }
-        if (expression instanceof NegativeNode negative) {
-            return Math.negateExact(evaluateConstant(negative.child));
-        }
+  private static long evaluateConstant(AstNode expression) {
+    if (expression instanceof LiteralNode literal) {
+      try {
+        return Long.parseLong(literal.literal);
+      } catch (NumberFormatException exception) {
         throw new IllegalArgumentException(
-            "Scheduled action delay must be a constant expression using decimal integers, "
-                + "arithmetic, and C time macros.");
+            "Scheduled action delays must use decimal integer literals.", exception);
+      }
     }
-
-    //TODO: Add visitScheduleActionTokenNode to handle booleans.
-    //TODO: will require addition to org.lflang.analyses.c also
-
-    @Override
-    public String visitSetPortNode(SetPortNode node) {
-        var port = parent.requirePort(((VariableNode) node.left).name);
-        String payload = visit(node.right);
-        return "(" + port.getName() + " <- " + payload + ")";
+    if (expression instanceof AdditionNode addition) {
+      return Math.addExact(evaluateConstant(addition.left), evaluateConstant(addition.right));
     }
-
-    @Override
-    public String visitStateVarNode(StateVarNode node) {
-        return parent.requireState(node.name).getName();
+    if (expression instanceof SubtractionNode subtraction) {
+      return Math.subtractExact(
+          evaluateConstant(subtraction.left), evaluateConstant(subtraction.right));
     }
-
-    @Override
-    public String visitTriggerIsPresentNode(TriggerIsPresentNode node) {
-        return "(isPresent(" + parent.requireTrigger(node.name).getName() +"))";
+    if (expression instanceof MultiplicationNode multiplication) {
+      return Math.multiplyExact(
+          evaluateConstant(multiplication.left), evaluateConstant(multiplication.right));
     }
-
-    @Override
-    public String visitTriggerValueNode(TriggerValueNode node) {
-        return parent.requireTrigger(node.name).getName();
+    if (expression instanceof NegativeNode negative) {
+      return Math.negateExact(evaluateConstant(negative.child));
     }
+    throw new IllegalArgumentException(
+        "Scheduled action delay must be a constant expression using decimal integers, "
+            + "arithmetic, and C time macros.");
+  }
 
-    @Override
-    public String visitVariableNode(VariableNode node) {
-        if (node.type.name().equals("UNKNOWN") && (node.name.equalsIgnoreCase("true") || node.name.equalsIgnoreCase("false"))) {
-            return "["+node.name.toLowerCase()+"]";
-        }
-        return parent.requireState(node.name).getName();
+  // TODO: Add visitScheduleActionTokenNode to handle booleans.
+  // TODO: will require addition to org.lflang.analyses.c also
+
+  @Override
+  public String visitSetPortNode(SetPortNode node) {
+    var port = parent.requirePort(((VariableNode) node.left).name);
+    String payload = visit(node.right);
+    return "(" + port.getName() + " <- " + payload + ")";
+  }
+
+  @Override
+  public String visitStateVarNode(StateVarNode node) {
+    return parent.requireState(node.name).getName();
+  }
+
+  @Override
+  public String visitTriggerIsPresentNode(TriggerIsPresentNode node) {
+    return "(isPresent(" + parent.requireTrigger(node.name).getName() + "))";
+  }
+
+  @Override
+  public String visitTriggerValueNode(TriggerValueNode node) {
+    return parent.requireTrigger(node.name).getName();
+  }
+
+  @Override
+  public String visitVariableNode(VariableNode node) {
+    if (node.type.name().equals("UNKNOWN")
+        && (node.name.equalsIgnoreCase("true") || node.name.equalsIgnoreCase("false"))) {
+      return "[" + node.name.toLowerCase() + "]";
     }
+    return parent.requireState(node.name).getName();
+  }
 
-    @Override
-    public String visitStatementSequenceNode(StatementSequenceNode node) {
-        String result = new String();
-        for (int i = 0; i < node.children.size(); i++) {
-            String temp = visit(node.children.get(i));
-            // treat opaque node as skip instruction.
-            if (temp == null)
-                temp = "skip";
-            result += temp;
-            if (i != node.children.size() - 1) {
-                    result += " ;\n";
-                }
-        }
-        return result;
+  @Override
+  public String visitStatementSequenceNode(StatementSequenceNode node) {
+    String result = new String();
+    for (int i = 0; i < node.children.size(); i++) {
+      String temp = visit(node.children.get(i));
+      // treat opaque node as skip instruction.
+      if (temp == null) temp = "skip";
+      result += temp;
+      if (i != node.children.size() - 1) {
+        result += " ;\n";
+      }
     }
-
+    return result;
+  }
 }
