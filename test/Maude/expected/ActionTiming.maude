@@ -70,4 +70,6 @@ endom
 
 red in ANALYSIS-ACTIONTIMING : search in 'ANALYSIS-ACTIONTIMING : initSystem timeBound 2000000 =>* (( (@ ActionTiming.m-sv.last in ActionTiming) === @ [1] )) .
 
+red in ANALYSIS-ACTIONTIMING : search in 'ANALYSIS-ACTIONTIMING : initSystem timeBound 2000000 =>* ((ActionTiming . 1) invoked ) .
+
 quit

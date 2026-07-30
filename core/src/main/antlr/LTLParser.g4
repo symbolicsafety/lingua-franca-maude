@@ -43,6 +43,8 @@ atomicProp
     | lfname=ID IN reactor=qualifiedName op=relOp val=INTEGER
     | lfname=ID IN reactor=qualifiedName bop=(EQ|NEQ) bval=(TRUE|FALSE)
     | reactor=qualifiedName DOT reaction=INTEGER INVOKED
+    | LPAREN reactor=qualifiedName DOT reaction=INTEGER INVOKED RPAREN
+    | LPAREN reactor=qualifiedName DOT reaction=INTEGER RPAREN INVOKED
     | event=EVENT LPAREN reactor=qualifiedName COMMA trigger=ID (COMMA val=(INTEGER|TRUE|FALSE))? RPAREN INQUEUE
     | rtime=REMAININGTIME rvalue=time
     | left=sum op=relOp right=sum
